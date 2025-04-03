@@ -1,26 +1,35 @@
-FROM node:20-alpine AS development-dependencies-env
+# === base
+FROM node:20-alpine AS base
 WORKDIR /app
+
+# === deps
+FROM base AS deps
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY . .
 
-FROM node:20-alpine AS production-dependencies-env
+# === build
+FROM base AS build
 WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npm run build
+
+# === production
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+# Cloud Run に必要なポート設定
+ENV NODE_ENV=production
+ENV PORT=8080
+
+# 本番用依存関係だけインストール（react-router 必須）
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-FROM node:20-alpine AS build-env
-WORKDIR /app
-COPY --from=development-dependencies-env /app /app
-RUN npm run build
+# build済みファイル・依存関係をコピー
+COPY --from=build /app/build ./build
+COPY --from=build /app/public ./public
+COPY --from=build /app/node_modules ./node_modules
 
-FROM node:20-alpine
-WORKDIR /app
-ENV PORT=8080
-ENV NODE_ENV=production
-
-# react-router が dependencies にあればこれで十分
-COPY --from=build-env /app /app
-RUN npm ci --omit=dev
-
+# アプリ起動
 CMD ["npm", "run", "start"]
