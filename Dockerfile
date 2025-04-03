@@ -1,21 +1,31 @@
-# Base image with Bun
-FROM oven/bun:1.0.30-alpine AS base
+FROM node:20-alpine AS base
 WORKDIR /app
 
 # deps
-COPY bun.lock package.json ./
-RUN bun install
+FROM base AS deps
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # build
+FROM base AS build
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN bun run build
+RUN npm run build
 
 # runner
-FROM oven/bun:1.0.30-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
-ENV PORT=8080
 ENV NODE_ENV=production
+ENV PORT=8080
 
-COPY --from=base /app /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
 
-CMD ["bun", "run", "start"]
+COPY --from=build /app/build ./build
+COPY --from=build /app/public ./public
+COPY --from=build /app/node_modules ./node_modules
+
+USER node
+
+CMD ["npm", "run", "start"]
