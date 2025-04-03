@@ -1,19 +1,26 @@
-# 1. Build stage
-FROM node:20-alpine AS build
+FROM node:20-alpine AS development-dependencies-env
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+
+FROM node:20-alpine AS production-dependencies-env
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+FROM node:20-alpine AS build-env
+WORKDIR /app
+COPY --from=development-dependencies-env /app /app
 RUN npm run build
 
-# 2. Production stage
 FROM node:20-alpine
 WORKDIR /app
-ENV NODE_ENV=production
 ENV PORT=8080
+ENV NODE_ENV=production
 
-# remix-serve を使うために react-router を dependencies に含めておく必要あり
-COPY --from=build /app ./
+# react-router が dependencies にあればこれで十分
+COPY --from=build-env /app /app
 RUN npm ci --omit=dev
 
 CMD ["npm", "run", "start"]
