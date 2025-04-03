@@ -3,7 +3,7 @@ FROM oven/bun:1.0.30-alpine AS base
 WORKDIR /app
 
 # deps
-COPY bun.lockb package.json ./
+COPY bun.lock package.json ./
 RUN bun install
 
 # build
