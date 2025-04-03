@@ -31,5 +31,8 @@ COPY --from=build /app/build ./build
 COPY --from=build /app/public ./public
 COPY --from=build /app/node_modules ./node_modules
 
+# 実行ユーザーを非rootに（セキュリティ対策）
+USER node
+
 # アプリ起動
 CMD ["npm", "run", "start"]
