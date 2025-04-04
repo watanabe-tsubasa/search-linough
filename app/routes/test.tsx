@@ -1,4 +1,4 @@
-import type { Route } from "./+types/_index";
+import type { Route } from "./+types/search";
 import { useLoaderData } from "react-router";
 
 export function meta({}: Route.MetaArgs) {

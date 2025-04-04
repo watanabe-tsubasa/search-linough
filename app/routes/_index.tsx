@@ -1,13 +1,9 @@
-import type { Route } from "./+types/_index";
-import { Welcome } from "../welcome/welcome";
+import { redirect } from "react-router"
 
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
-  ];
+export const loader = () => {
+  return redirect('/search')
 }
 
-export default function Home() {
-  return <Welcome />;
+export default function Main() {
+  return null;
 }
