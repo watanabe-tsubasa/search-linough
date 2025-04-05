@@ -1,7 +1,5 @@
-import type { House, Store } from "~/types"
+import type { House, NewHouse, NewStore, Store, UpdateHouse, UpdateStore } from "~/types"
 import { supabase } from "./client"
-import type { TablesInsert, TablesUpdate } from "~/database.types"
-
 // ======================
 // === Stores (Shops) === 
 // ======================
@@ -32,6 +30,31 @@ export const fetchStores = async (): Promise<Store[]> => {
 }
 
 /**
+ * Fetches a single store by its store_id from the database.
+ * @param storeId - The store_id of the store to fetch.
+ * @returns {Promise<Store | null>} A promise that resolves to the store object or null if not found.
+ * @throws Will throw an error if the fetch operation fails.
+ * @example
+ * const store = await fetchStoreById('tokyo-01')
+ * console.log(store)
+ * // Output: { id: 1, store: 'Tokyo', store_id: 'tokyo-01' }
+ */
+export const fetchStoreById = async (storeId: string): Promise<Store | null> => {
+  const { data, error } = await supabase
+    .from("stores")
+    .select("*")
+    .eq("store_id", storeId)
+    .single() // 1件だけ返すように指定
+
+  if (error) {
+    console.error("Error fetching store by ID:", error)
+    return null
+  }
+
+  return data
+}
+
+/**
  * Inserts a new store into the database.
  * @param store - The store object to be inserted into the database.
  * @returns {Promise<Store[]>} A promise that resolves to the inserted store data.
@@ -44,7 +67,7 @@ export const fetchStores = async (): Promise<Store[]> => {
  * @see {@link https://supabase.com/docs/guides/database} for more information on Supabase database operations.
  * @see {@link https://supabase.com/docs/guides/api} for more information on Supabase API operations.
  */
-export const insertStore = async (store: TablesInsert<"stores">): Promise<Store[]> => {
+export const insertStore = async (store: NewStore): Promise<Store[]> => {
   const { data, error } = await supabase
     .from("stores")
     .insert(store)
@@ -75,7 +98,7 @@ export const insertStore = async (store: TablesInsert<"stores">): Promise<Store[
  */
 export const updateStore = async (
   store_id: string,
-  update: TablesUpdate<"stores">
+  update: UpdateStore
 ): Promise<Store[]> => {
   const { data, error } = await supabase
     .from("stores")
@@ -148,25 +171,55 @@ export const fetchHouses = async (storeId: string): Promise<House[]> => {
 }
 
 /**
- * Inserts a new apartment into the database.
- * @param apartment - The apartment object to be inserted into the database.
- * @returns {Promise<House[]>} A promise that resolves to the inserted apartment data.
- * @throws Will throw an error if the insert operation fails.
+ * Fetches a single house by its ID from the database.
+ * @param id - The ID of the house to fetch.
+ * @returns {Promise<House | null>} A promise that resolves to the house object or null if not found.
+ * @throws Will throw an error if the fetch operation fails.
  * @example
- * const newApartment = { address: '123 Main St', apartment: 'Apt 1', store_id: '01050000017880' }
- * const insertedApartment = await insertHouse(newApartment)
- * console.log(insertedApartment)
- * // Output: [{ id: 1, address: '123 Main St', apartment: 'Apt 1', store_id: '01050000017880' }]
+ * const house = await fetchHouse(1)
+ * console.log(house)
+ * // Output: { id: 1, address: '123 Main St', apartment: 'Apt 1', ... }
  * @see {@link https://supabase.com/docs/guides/database} for more information on Supabase database operations.
  * @see {@link https://supabase.com/docs/guides/api} for more information on Supabase API operations.
  */
-export const insertHouse = async (apartment: House): Promise<House[]> => {
+export const fetchHouse = async (id: number): Promise<House | null> => {
   const { data, error } = await supabase
     .from("houses")
-    .insert(apartment)
+    .select("*")
+    .eq("id", id)
+    .single()
 
   if (error) {
-    console.error("Error inserting apartment:", error)
+    console.error("Error fetching house by ID:", error)
+    return null
+  }
+
+  return data
+}
+
+/**
+ * Inserts one or multiple houses into the database.
+ * Automatically detects whether the input is a single object or an array.
+ *
+ * @param input - A single NewHouse object or an array of NewHouse objects.
+ * @returns A promise resolving to an array of inserted House records.
+ *
+ * @example
+ * const result = await insertHouse({ ... })          // 単一件
+ * const result = await insertHouse([{ ... }, { ... }]) // 複数件
+ */
+export const insertHouse = async (
+  input: NewHouse | NewHouse[]
+): Promise<House[]> => {
+  const payload = Array.isArray(input) ? input : [input]
+
+  const { data, error } = await supabase
+    .from("houses")
+    .insert(payload)
+    .select()
+
+  if (error) {
+    console.error("Error inserting house(s):", error)
     return []
   }
 
@@ -188,11 +241,12 @@ export const insertHouse = async (apartment: House): Promise<House[]> => {
  * @see {@link https://supabase.com/docs/guides/database} for more information on Supabase database operations.
  * @see {@link https://supabase.com/docs/guides/api} for more information on Supabase API operations.
  */
-export const updateHouse = async (id: number, updates: Partial<House>): Promise<House[]> => {
+export const updateHouse = async (id: number, updates: UpdateHouse): Promise<House[]> => {
   const { data, error } = await supabase
     .from("houses")
     .update(updates)
     .eq("id", id)
+    .select()
 
   if (error) {
     console.error("Error updating apartment:", error)
@@ -222,6 +276,25 @@ export const deleteHouse = async (id: number): Promise<boolean> => {
 
   if (error) {
     console.error("Error deleting apartment:", error)
+    return false
+  }
+
+  return true
+}
+
+/**
+ * Deletes multiple apartments from the database.
+ * @param ids - The IDs of the apartments to be deleted.
+ * @returns {Promise<boolean>} A promise that resolves to true if deletion succeeded, false otherwise.
+ */
+export const deleteMultipleHouses = async (ids: number[]): Promise<boolean> => {
+  const { error } = await supabase
+    .from("houses")
+    .delete()
+    .in("id", ids)
+
+  if (error) {
+    console.error("Error deleting multiple apartments:", error)
     return false
   }
 
