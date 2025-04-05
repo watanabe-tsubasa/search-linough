@@ -1,13 +1,15 @@
 import { Loader2 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { Await, useLoaderData, useNavigation, type LoaderFunctionArgs } from "react-router";
-import { ApartmentCards, FakeApartmentCards, fetchApartments } from "~/components/ApartmentSearcher";
-import { type HouseData } from "~/types";
+import { FakeHouseCards, HouseCards } from "~/components/HouseSearcher";
+import { fetchHouses } from "~/lib/supabase/db";
+import { type House  } from "~/types";
 
 export const loader = async({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const store = url.searchParams.get("store");
-  return { store, apartmentsPromise: fetchApartments(store) }
+  const storeId = url.searchParams.get("store_id");
+  return { store, housesPromise: fetchHouses(storeId ?? "") }
 }
 
 export default function StoreDetails() {
@@ -17,7 +19,7 @@ export default function StoreDetails() {
     
   const [addressSearchTerm, setAddressSearchTerm] = useState("");
   const data = useLoaderData<typeof loader>();
-  const { store, apartmentsPromise } = data;
+  const { store, housesPromise } = data;
   return (
     <div className="bg-gray-100 px-8 pt-8">
       <div className="mx-auto">
@@ -32,7 +34,7 @@ export default function StoreDetails() {
             </div>
           </h1>
           {/* <p className="text-gray-600">
-            該当物件数: {filteredApartments.length}件
+            該当物件数: {filteredHouses.length}件
           </p> */}
         </div>
 
@@ -53,10 +55,10 @@ export default function StoreDetails() {
           className="overflow-y-auto"
           style={{ height: "calc(100vh - 300px)" }} // 例: ヘッダー + 検索 + margin 合計
         >
-          <Suspense fallback={<FakeApartmentCards />}>
-            <Await resolve={apartmentsPromise}>
-              {(apartments: HouseData[]) => (
-                <ApartmentCards apartments={apartments} addressSearchTerm={addressSearchTerm} />
+          <Suspense fallback={<FakeHouseCards />}>
+            <Await resolve={housesPromise}>
+              {(houses: House[]) => (
+                <HouseCards houses={houses} addressSearchTerm={addressSearchTerm} />
               )}
             </Await>
           </Suspense>

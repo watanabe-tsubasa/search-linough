@@ -1,22 +1,13 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Command } from 'cmdk';
 import { Loader2, Search } from 'lucide-react';
-import { houseData } from '~/types';
 import { Await, useSubmit } from 'react-router';
-
-export const fetchStores = async () => {
-  return new Promise<string[]>((resolve) => {
-    setTimeout(() => {
-      const apiResponse = houseData.map((data) => data.store);
-      resolve([...new Set(apiResponse)]);
-    }, 100);
-  });
-};
+import type { Store } from '~/types';
 
 export default function StoreSearch({
   storesPromise,
 }: {
-  storesPromise: Promise<string[]>;
+  storesPromise: Promise<Store[]>;
   initialValue?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -53,7 +44,7 @@ export default function StoreSearch({
     <div className="relative" ref={commandRef}>
       <Suspense fallback={<DummyStoreSearch />}>
         <Await resolve={storesPromise}>
-          {(stores: string[]) => (
+          {(stores) => (
             <Command className="relative border rounded-lg shadow-sm bg-white overflow-visible" loop>
               <div className="flex items-center border-b px-3">
                 <Search className="w-4 h-4 text-gray-400" />
@@ -70,17 +61,18 @@ export default function StoreSearch({
                     // .filter((store) => store.toLowerCase().includes(value.toLowerCase()))
                     .map((store) => (
                       <Command.Item
-                        key={store}
-                        value={store}
-                        onSelect={(selectedValue) => {
+                        key={store.store_id}
+                        value={store.store}
+                        onSelect={() => {
                           const formData = new FormData();
-                          formData.set("store", selectedValue);
+                          formData.set("store", store.store);
+                          formData.set("storeId", store.store_id);
                           submit(formData, { method: "post" });
                           setOpen(false);
                         }}
                         className="px-2 py-1.5 rounded hover:bg-gray-100 cursor-pointer"
                       >
-                        {store}
+                        {store.store}
                       </Command.Item>
                     ))}
                 </Command.List>

@@ -1,0 +1,28 @@
+# cloudbuild.yaml
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t', 'gcr.io/$PROJECT_ID/search-linough',
+        '--build-arg', 'SUPABASE_URL=${_SUPABASE_URL}',
+        '--build-arg', 'SUPABASE_KEY=${_SUPABASE_KEY}',
+        '.'
+      ]
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/search-linough']
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      [
+        'run', 'deploy', 'search-linough',
+        '--image', 'gcr.io/$PROJECT_ID/search-linough',
+        '--region', '${_DEPLOY_REGION}',
+        '--platform', '${_PLATFORM}',
+        '--allow-unauthenticated'
+      ]
+
+images:
+  - gcr.io/$PROJECT_ID/search-linough

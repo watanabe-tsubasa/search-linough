@@ -1,33 +1,21 @@
 import { ArrowLeft } from "lucide-react";
 import { useMemo } from "react";
 import { Link } from "react-router";
-import { houseData, type HouseData } from "~/types";
+import { type House } from "~/types";
 import { findBestMatch } from "~/utils";
 
-export const fetchApartments = async (store: string | null) => {
-  if (!store) return [];
 
-  return new Promise<HouseData[]>((resolve) => {
-    setTimeout(() => {
-      const apartments = houseData.filter(
-          data => data.store === decodeURIComponent(store ?? "")
-        );
-      resolve([...new Set(apartments)]);
-    }, 1000);
-  });
-};
-
-export const ApartmentCards = ({
-  apartments,
+export const HouseCards = ({
+  houses,
   addressSearchTerm
 }: {
-  apartments: HouseData[],
+  houses: House[],
   addressSearchTerm: string
 }) => {
-  const filteredApartments = useMemo(() => {
-    if (!addressSearchTerm) return apartments;
+  const filteredHouses = useMemo(() => {
+    if (!addressSearchTerm) return houses;
   
-    return apartments
+    return houses
       .map(apt => {
         const matchScore = findBestMatch(
           addressSearchTerm,
@@ -36,23 +24,23 @@ export const ApartmentCards = ({
         );
 
         return { 
-          apartment: apt, 
+          house: apt, 
           matchScore
         };
       })
       .filter(({ matchScore }) => matchScore >= 80) // しきい値80
       .sort((a, b) => b.matchScore - a.matchScore) // スコア順にソート
-      .map(({ apartment }) => apartment);
-  }, [apartments, addressSearchTerm]);
+      .map(({ house }) => house);
+  }, [houses, addressSearchTerm]);
 
-  if (!apartments.length) return <ErrorAccess />
+  if (!houses.length) return <ErrorAccess />
 
   return(
     <div className="gap-4 grid grid-cols-2">
-      {filteredApartments.map((apartment) => (
-        <ApartmentCard
-         key={`${apartment.post}-${apartment.apartment}`}
-         apartment={apartment} 
+      {filteredHouses.map((house) => (
+        <HouseCard
+         key={`${house.post}-${house.apartment}`}
+         house={house} 
         />
       ))}
     </div>
@@ -60,17 +48,17 @@ export const ApartmentCards = ({
 
 }
 
-const ApartmentCard = ({ apartment }: {apartment: HouseData}) => {
+const HouseCard = ({ house }: {house: House}) => {
   return (
     <div
       className="bg-white p-6 rounded-lg shadow-sm border"
     >
       <h2 className="text-xl font-semibold mb-2">
-        {apartment.apartment}
+        {house.apartment}
       </h2>
-      <p className="text-gray-600">{apartment.address}</p>
+      <p className="text-gray-600">{house.address}</p>
       <p className="text-gray-500 text-sm mt-2">
-        世帯数: {apartment.households}
+        世帯数: {house.households}
       </p>
     </div>
   )
@@ -98,18 +86,18 @@ const ErrorAccess = () => {
   )
 }
 
-export const FakeApartmentCards = () => {
+export const FakeHouseCards = () => {
   return (
     <div className="gap-4 grid grid-cols-2">
-      <FakeApartmentCard/>
-      <FakeApartmentCard/>
-      <FakeApartmentCard/>
-      <FakeApartmentCard/>
+      <FakeHouseCard/>
+      <FakeHouseCard/>
+      <FakeHouseCard/>
+      <FakeHouseCard/>
     </div>
   )
 }
 
-const FakeApartmentCard = () => {
+const FakeHouseCard = () => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border animate-pulse">
       <div className="h-6 bg-gray-200 rounded w-3/4 mb-4" /> {/* タイトル */}
