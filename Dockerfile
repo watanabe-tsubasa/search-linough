@@ -19,12 +19,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# ← ここで build-arg を ENV に変換
-ARG SUPABASE_URL
-ARG SUPABASE_KEY
-ENV SUPABASE_URL=${SUPABASE_URL}
-ENV SUPABASE_KEY=${SUPABASE_KEY}
-
 COPY package.json package-lock.json ./
 RUN npm install --omit=dev
 
