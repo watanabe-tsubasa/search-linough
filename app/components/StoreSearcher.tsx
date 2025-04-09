@@ -5,12 +5,9 @@ import { Await, useSubmit } from 'react-router';
 import type { Store } from '~/types';
 
 export default function StoreSearch({
-  storesPromise,
+  stores,
 }: {
-  storesPromise: Promise<{
-    stores: Store[];
-    error: any;
-}>;
+  stores: Promise<Store[]>;
   initialValue?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -46,10 +43,8 @@ export default function StoreSearch({
   return (
     <div className="relative" ref={commandRef}>
       <Suspense fallback={<DummyStoreSearch />}>
-        <Await resolve={storesPromise}>
-          {(result) => {
-             console.log("Await resolved with:", result);
-            return (
+        <Await resolve={stores}>
+          {(stores) =>  (
             <Command className="relative border rounded-lg shadow-sm bg-white overflow-visible" loop>
               <div className="flex items-center border-b px-3">
                 <Search className="w-4 h-4 text-gray-400" />
@@ -62,7 +57,7 @@ export default function StoreSearch({
 
               {open && (
                 <Command.List className="absolute top-full left-0 w-full max-h-[300px] bg-white border border-t-0 rounded-b-lg shadow-lg overflow-y-auto z-10 p-2">
-                  {result.stores
+                  {stores
                     // .filter((store) => store.toLowerCase().includes(value.toLowerCase()))
                     .map((store) => (
                       <Command.Item
@@ -83,7 +78,7 @@ export default function StoreSearch({
                 </Command.List>
               )}
             </Command>
-          )}}
+          )}
         </Await>
       </Suspense>
     </div>

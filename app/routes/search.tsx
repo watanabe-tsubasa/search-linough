@@ -1,7 +1,7 @@
 import { Outlet, redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/search";
 import StoreSearch from "~/components/StoreSearcher";
-import { fetchStores, fetchStoresPromise } from "~/lib/supabase/db";
+import { fetchStores } from "~/lib/supabase/db";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -11,21 +11,20 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export const loader = async () => {
-  return { storesPromise: fetchStoresPromise() };
+  return { stores: fetchStores() };
 };
 
 export async function action({ request }: { request: Request }) {
   const formData = await request.formData();
   const store = formData.get("store");
   const storeId = formData.get("storeId");
-  console.log(store, storeId);
   if (typeof store !== "string") return redirect("/search");
 
   return redirect(`/search/result?store=${encodeURIComponent(store)}&store_id=${storeId}`);
 }
 
 export default function Main() {
-  const { storesPromise } = useLoaderData<typeof loader>();
+  const { stores } = useLoaderData<typeof loader>();
   return (
     <div className="h-screen bg-gray-100 p-8">
       {/* 固定ヘッダー */}
@@ -33,7 +32,7 @@ export default function Main() {
         <div className="mx-auto max-w-2xl flex flex-row items-center space-x-6 px-8">
           <h1 className="text-2xl font-bold whitespace-nowrap">店舗検索</h1>
           <div className="flex-grow">
-            <StoreSearch storesPromise={storesPromise} />
+            <StoreSearch stores={stores} />
           </div>
         </div>
       </div>
