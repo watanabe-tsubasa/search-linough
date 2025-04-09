@@ -5,9 +5,9 @@ import { Await, useSubmit } from 'react-router';
 import type { Store } from '~/types';
 
 export default function StoreSearch({
-  storesPromise,
+  stores,
 }: {
-  storesPromise: Promise<Store[]>;
+  stores: Promise<Store[]>;
   initialValue?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -43,8 +43,8 @@ export default function StoreSearch({
   return (
     <div className="relative" ref={commandRef}>
       <Suspense fallback={<DummyStoreSearch />}>
-        <Await resolve={storesPromise}>
-          {(stores) => (
+        <Await resolve={stores}>
+          {(stores) =>  (
             <Command className="relative border rounded-lg shadow-sm bg-white overflow-visible" loop>
               <div className="flex items-center border-b px-3">
                 <Search className="w-4 h-4 text-gray-400" />
@@ -98,3 +98,27 @@ const DummyStoreSearch = () => {
     </div>
   );
 }
+
+// export default function StoreSearch({ storesPromise }: { storesPromise: Promise<{ stores: Store[]; error: any }> }) {
+//   console.log("StoreSearch received:", storesPromise);
+
+//   return (
+//     <div className="relative">
+//       <Suspense fallback={<div>Loading...</div>}>
+//         <Await resolve={storesPromise}>
+//           {(result) => {
+//             console.log("Await resolved with:", result);
+//             const { stores } = result;
+//             return (
+//               <ul>
+//                 {stores.map((s) => (
+//                   <li key={s.store_id}>{s.store}</li>
+//                 ))}
+//               </ul>
+//             );
+//           }}
+//         </Await>
+//       </Suspense>
+//     </div>
+//   );
+// }

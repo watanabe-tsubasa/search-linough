@@ -6,7 +6,6 @@ import { supabase } from "./client"
 
 /**
  * Fetches all stores from the database.
- * @returns {Promise<Store[]>} A promise that resolves to an array of stores.
  * @throws Will throw an error if the fetch operation fails.
  * @example
  * const stores = await fetchStores()
@@ -15,7 +14,7 @@ import { supabase } from "./client"
  * @see {@link https://supabase.com/docs/guides/database} for more information on Supabase database operations.
  * @see {@link https://supabase.com/docs/guides/api} for more information on Supabase API operations.
  */
-export const fetchStores = async (): Promise<Store[]> => {
+export const fetchStores = async () => {
   const { data, error } = await supabase
     .from("stores")
     .select("*")
@@ -28,6 +27,23 @@ export const fetchStores = async (): Promise<Store[]> => {
 
   return data || []
 }
+
+// export const fetchStoresPromise = ():
+//   Promise<{ stores: Store[]; error: any }> => {
+//   return Promise.resolve(
+//     supabase
+//       .from("stores")
+//       .select("*")
+//       .order("store", { ascending: true })
+//       .then(({ data, error }) => {
+//         if (error) {
+//           console.error("Error fetching stores:", error);
+//           return { stores: [], error };
+//         }
+//         return { stores: data ?? [], error: null };
+//       })
+//   );
+// };
 
 /**
  * Fetches a single store by its store_id from the database.
@@ -169,6 +185,30 @@ export const fetchHouses = async (storeId: string): Promise<House[]> => {
 
   return data || []
 }
+
+// /**
+//  * Fetches all apartments for a given store from the database.
+//  * This function returns a promise that resolves to an array of apartments.
+//  * @param storeId - The ID of the store to fetch apartments for.
+//  * // Output: [{ id: 1, address: '123 Main St', apartment: 'Apt 1' }, { id: 2, address: '456 Elm St', apartment: 'Apt 2' }]
+//  * @see {@link https://supabase.com/docs/guides/database} for more information on Supabase database operations.
+//  * @see {@link https://supabase.com/docs/guides/api} for more information on Supabase API operations.
+//  */
+// export const fetchHousesPromise = (storeId: string): Promise<{ data: House[]; error: any }> => {
+//   return Promise.resolve(
+//     supabase
+//       .from("houses")
+//       .select("*")
+//       .eq("store_id", storeId)
+//       .then(({ data, error }) => {
+//         if (error) {
+//           console.error("Error fetching houses:", error);
+//           return { data: [], error };
+//         }
+//         return { data: data ?? [], error: null };
+//       })
+//   );
+// };
 
 /**
  * Fetches a single house by its ID from the database.

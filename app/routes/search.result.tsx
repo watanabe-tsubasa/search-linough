@@ -3,7 +3,6 @@ import { Suspense, useState } from "react";
 import { Await, useLoaderData, useNavigation, type LoaderFunctionArgs } from "react-router";
 import { FakeHouseCards, HouseCards } from "~/components/HouseSearcher";
 import { fetchHouses } from "~/lib/supabase/db";
-import { type House  } from "~/types";
 
 export const loader = async({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
@@ -57,7 +56,7 @@ export default function StoreDetails() {
         >
           <Suspense fallback={<FakeHouseCards />}>
             <Await resolve={housesPromise}>
-              {(houses: House[]) => (
+              {(houses) => (
                 <HouseCards houses={houses} addressSearchTerm={addressSearchTerm} />
               )}
             </Await>

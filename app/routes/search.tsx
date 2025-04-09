@@ -11,7 +11,7 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export const loader = async () => {
-  return { storesPromise: fetchStores() };
+  return { stores: fetchStores() };
 };
 
 export async function action({ request }: { request: Request }) {
@@ -24,7 +24,7 @@ export async function action({ request }: { request: Request }) {
 }
 
 export default function Main() {
-  const { storesPromise } = useLoaderData<typeof loader>();
+  const { stores } = useLoaderData<typeof loader>();
   return (
     <div className="h-screen bg-gray-100 p-8">
       {/* 固定ヘッダー */}
@@ -32,7 +32,7 @@ export default function Main() {
         <div className="mx-auto max-w-2xl flex flex-row items-center space-x-6 px-8">
           <h1 className="text-2xl font-bold whitespace-nowrap">店舗検索</h1>
           <div className="flex-grow">
-            <StoreSearch storesPromise={storesPromise} />
+            <StoreSearch stores={stores} />
           </div>
         </div>
       </div>
