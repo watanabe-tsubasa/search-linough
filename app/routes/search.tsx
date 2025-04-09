@@ -1,7 +1,7 @@
 import { Outlet, redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/search";
 import StoreSearch from "~/components/StoreSearcher";
-import { fetchStores } from "~/lib/supabase/db";
+import { fetchStores, fetchStoresPromise } from "~/lib/supabase/db";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -11,13 +11,14 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export const loader = async () => {
-  return { storesPromise: fetchStores() };
+  return { storesPromise: fetchStoresPromise() };
 };
 
 export async function action({ request }: { request: Request }) {
   const formData = await request.formData();
   const store = formData.get("store");
   const storeId = formData.get("storeId");
+  console.log(store, storeId);
   if (typeof store !== "string") return redirect("/search");
 
   return redirect(`/search/result?store=${encodeURIComponent(store)}&store_id=${storeId}`);

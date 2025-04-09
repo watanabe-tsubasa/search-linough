@@ -7,7 +7,10 @@ import type { Store } from '~/types';
 export default function StoreSearch({
   storesPromise,
 }: {
-  storesPromise: Promise<Store[]>;
+  storesPromise: Promise<{
+    stores: Store[];
+    error: any;
+}>;
   initialValue?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -44,7 +47,9 @@ export default function StoreSearch({
     <div className="relative" ref={commandRef}>
       <Suspense fallback={<DummyStoreSearch />}>
         <Await resolve={storesPromise}>
-          {(stores) => (
+          {(result) => {
+             console.log("Await resolved with:", result);
+            return (
             <Command className="relative border rounded-lg shadow-sm bg-white overflow-visible" loop>
               <div className="flex items-center border-b px-3">
                 <Search className="w-4 h-4 text-gray-400" />
@@ -57,7 +62,7 @@ export default function StoreSearch({
 
               {open && (
                 <Command.List className="absolute top-full left-0 w-full max-h-[300px] bg-white border border-t-0 rounded-b-lg shadow-lg overflow-y-auto z-10 p-2">
-                  {stores
+                  {result.stores
                     // .filter((store) => store.toLowerCase().includes(value.toLowerCase()))
                     .map((store) => (
                       <Command.Item
@@ -78,7 +83,7 @@ export default function StoreSearch({
                 </Command.List>
               )}
             </Command>
-          )}
+          )}}
         </Await>
       </Suspense>
     </div>
@@ -98,3 +103,27 @@ const DummyStoreSearch = () => {
     </div>
   );
 }
+
+// export default function StoreSearch({ storesPromise }: { storesPromise: Promise<{ stores: Store[]; error: any }> }) {
+//   console.log("StoreSearch received:", storesPromise);
+
+//   return (
+//     <div className="relative">
+//       <Suspense fallback={<div>Loading...</div>}>
+//         <Await resolve={storesPromise}>
+//           {(result) => {
+//             console.log("Await resolved with:", result);
+//             const { stores } = result;
+//             return (
+//               <ul>
+//                 {stores.map((s) => (
+//                   <li key={s.store_id}>{s.store}</li>
+//                 ))}
+//               </ul>
+//             );
+//           }}
+//         </Await>
+//       </Suspense>
+//     </div>
+//   );
+// }

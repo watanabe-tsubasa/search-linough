@@ -2,14 +2,14 @@ import { Loader2 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { Await, useLoaderData, useNavigation, type LoaderFunctionArgs } from "react-router";
 import { FakeHouseCards, HouseCards } from "~/components/HouseSearcher";
-import { fetchHouses } from "~/lib/supabase/db";
+import { fetchHouses, fetchHousesPromise } from "~/lib/supabase/db";
 import { type House  } from "~/types";
 
 export const loader = async({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const store = url.searchParams.get("store");
   const storeId = url.searchParams.get("store_id");
-  return { store, housesPromise: fetchHouses(storeId ?? "") }
+  return { store, housesPromise: fetchHousesPromise(storeId ?? "") }
 }
 
 export default function StoreDetails() {
@@ -57,8 +57,8 @@ export default function StoreDetails() {
         >
           <Suspense fallback={<FakeHouseCards />}>
             <Await resolve={housesPromise}>
-              {(houses: House[]) => (
-                <HouseCards houses={houses} addressSearchTerm={addressSearchTerm} />
+              {({data, error}) => (
+                <HouseCards houses={data} addressSearchTerm={addressSearchTerm} />
               )}
             </Await>
           </Suspense>
