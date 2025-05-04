@@ -76,18 +76,19 @@ export const fetchStoreById = async (storeId: string): Promise<Store | null> => 
  * @returns {Promise<Store[]>} A promise that resolves to the inserted store data.
  * @throws Will throw an error if the insert operation fails.
  * @example
- * const newStore = { store: 'New Store' }
+ * const newStore = { store: 'New Store', store_id: 'new-store-01' }
  * const insertedStore = await insertStore(newStore)
  * console.log(insertedStore)
- * // Output: [{ id: 3, store: 'New Store' }]
+ * // Output: [{ id: 1, store: 'New Store', store_id: 'new-store-01' }]
  * @see {@link https://supabase.com/docs/guides/database} for more information on Supabase database operations.
  * @see {@link https://supabase.com/docs/guides/api} for more information on Supabase API operations.
  */
-export const insertStore = async (store: NewStore): Promise<Store[]> => {
+export const insertStore = async (store: NewStore | NewStore[]): Promise<Store[]> => {
+  const payload = Array.isArray(store) ? store : [store]
   const { data, error } = await supabase
     .from("stores")
-    .insert(store)
-    .select() // 追加後のデータを返すために `.select()` をつけるのが推奨されます
+    .insert(payload)
+    .select()
 
   if (error) {
     console.error("Failed to insert store:", error)

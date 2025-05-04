@@ -1,4 +1,14 @@
+import { ToastProvider } from "@radix-ui/react-toast";
 import { Outlet, useLoaderData } from "react-router";
+import { ToastRenderer } from "~/components/ToastRender";
+import type { Route } from "../+types/root";
+
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: "linough searcher admin" },
+    { name: "description", content: "edit linough relative data" },
+  ];
+}
 
 export const loader = async () => {
   return { data: 'admin'}
@@ -9,8 +19,10 @@ export default function Admin(){
   const { data } = useLoaderData<typeof loader>()
   return(
     <div>
-      {data}
-      <Outlet />
+      <ToastProvider>
+        <ToastRenderer />
+        <Outlet />
+      </ToastProvider>
     </div>
   )
 }

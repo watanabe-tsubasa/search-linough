@@ -13,3 +13,52 @@ body {
     color-scheme: dark;
   }
 }
+
+/* カスタムアニメーション */
+@layer utilities {
+  @keyframes enter {
+    from {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes exit {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-in {
+    animation: enter 0.3s ease-out;
+  }
+
+  .animate-out {
+    animation: exit 0.3s ease-in;
+  }
+
+  .slide-in-from-top-full {
+    transform: translateY(-100%);
+  }
+
+  .slide-in-from-bottom-full {
+    transform: translateY(100%);
+  }
+
+  .slide-out-to-right-full {
+    transform: translateX(100%);
+  }
+
+  .fade-out-80 {
+    opacity: 0.2;
+  }
+}

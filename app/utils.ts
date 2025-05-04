@@ -1,4 +1,10 @@
+import clsx, { type ClassValue } from 'clsx';
 import { distance } from 'fastest-levenshtein';
+import { twMerge } from 'tailwind-merge';
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 /**
  * 住所の正規化
@@ -56,4 +62,22 @@ export const findBestMatch = (
 
   // より高いスコアを採用
   return Math.max(addressMatchScore, fullAddressMatchScore);
+}
+
+// =========
+// ===dev===
+// =========
+
+// ここから下は開発用のモックデータや関数
+/**
+ * APIのモック
+ * @param data
+ * @returns
+ */
+export function mockApiCall<T>(data: T): Promise<T> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(data);
+    }, 3000);
+  });
 }

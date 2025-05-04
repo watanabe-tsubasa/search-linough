@@ -7,7 +7,7 @@ import type { Store } from '~/types';
 export default function StoreSearch({
   stores,
 }: {
-  stores: Promise<Store[]>;
+  stores: Promise<Store[]> | Store[];
   initialValue?: string;
 }) {
   const [open, setOpen] = useState(false);

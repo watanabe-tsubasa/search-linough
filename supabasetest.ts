@@ -1,11 +1,21 @@
-import { fetchHouses, fetchHousesPromise, fetchStores, fetchStoresPromise } from "~/lib/supabase/db"
+import { fetchHouses, fetchStores, insertStore } from "~/lib/supabase/db"
 
 const main = async () => {
-  const {stores} = await fetchStoresPromise();
-  console.log(stores);
-  const { data, error } = await fetchHousesPromise('01050000017880')
-  console.log(stores)
-  console.log(data)
+  // const storeRes = await fetchStores();
+  // console.log(storeRes);
+  // const apartments = await fetchHouses('01050000017880')
+  // console.log(apartments)
+  const res = await insertStore([
+    {
+      store: 'test',
+      store_id: 'test',
+    },
+    {
+      store: 'test2',
+      store_id: 'test2',
+    },
+  ]);
+  console.log(res)
 }
 
 main().catch((error) => {
