@@ -1,35 +1,73 @@
 // マンションと店舗のリレーションを変更する
 
 import { Home, LinkIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  Form,
+  redirect,
+  useLoaderData,
+  useLocation,
+  type ActionFunctionArgs,
+  type LoaderFunctionArgs,
+} from "react-router";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "~/components/Dialog";
 import { useToast } from "~/Hooks/use-toast";
+import { fetchAllHouses, updateHousesStore } from "~/lib/supabase/db";
 import type { House } from "~/types";
-import { mockApiCall } from "~/utils";
 
 interface HouseData extends House {
   isChecked: boolean;
 }
 
+export const loader = async (_args: LoaderFunctionArgs) => {
+  const houses = await fetchAllHouses();
+  return { houses };
+};
+
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const formData = await request.formData();
+  const store_id = String(formData.get("store_id") || "");
+  const ids = formData
+    .getAll("ids")
+    .map((id) => Number(id))
+    .filter((id) => !Number.isNaN(id));
+
+  if (!store_id || ids.length === 0) {
+    return redirect("/admin/panel/editRelation?success=0");
+  }
+
+  const success = await updateHousesStore(ids, store_id);
+  return redirect(`/admin/panel/editRelation?success=${success ? 1 : 0}`);
+};
+
 export default function EditRelation() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [newStoreId, setNewStoreId] = useState('');
+  const { houses: loaderHouses } = useLoaderData<typeof loader>();
+  const [houses, setHouses] = useState<HouseData[]>(() =>
+    loaderHouses.map((h: any) => ({ ...(h as House), isChecked: false }))
+  );
+  const [searchTerm, setSearchTerm] = useState("");
+  const [newStoreId, setNewStoreId] = useState("");
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
   const { toast } = useToast();
+  const location = useLocation();
 
-  // Mock data
-  const [houses, setHouses] = useState<HouseData[]>([
-    {
-      id: 1,
-      store_id: '0105123456789',
-      apartment: 'サンプルマンション',
-      address: '東京都新宿区1-1-1',
-      post: '160-0022',
-      prefectures: '東京都',
-      households: 100,
-      isChecked: false,
-    },
-  ]);
+  useEffect(() => {
+    setHouses(loaderHouses.map((h: any) => ({ ...(h as House), isChecked: false })));
+  }, [loaderHouses]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const success = params.get("success");
+    if (success === "1") {
+      toast({ title: "店舗の紐付けを更新しました", variant: "success" });
+    } else if (success === "0") {
+      toast({
+        title: "エラーが発生しました",
+        description: "店舗の紐付け更新に失敗しました",
+        variant: "error",
+      });
+    }
+  }, [location.search, toast]);
 
   const filteredHouses = houses.filter((house) =>
     house.apartment.toLowerCase().includes(searchTerm.toLowerCase())
@@ -43,49 +81,20 @@ export default function EditRelation() {
     );
   };
 
-  const handleUpdate = async () => {
-    const selectedHouses = houses.filter((house) => house.isChecked);
-    if (selectedHouses.length === 0) {
-      toast({
-        title: 'マンションが選択されていません',
-        variant: 'error',
-      });
+  const handleOpenDialog = () => {
+    const selected = houses.filter((h) => h.isChecked);
+    if (selected.length === 0) {
+      toast({ title: "マンションが選択されていません", variant: "error" });
       return;
     }
-
     if (!newStoreId) {
-      toast({
-        title: '店舗コードが入力されていません',
-        variant: 'error',
-      });
+      toast({ title: "店舗コードが入力されていません", variant: "error" });
       return;
     }
-
-    try {
-      await mockApiCall(
-        selectedHouses.map((house) => ({
-          ...house,
-          store_id: newStoreId,
-        }))
-      );
-      setHouses(
-        houses.map((house) =>
-          house.isChecked ? { ...house, store_id: newStoreId } : house
-        )
-      );
-      setIsUpdateDialogOpen(false);
-      toast({
-        title: '店舗の紐付けを更新しました',
-        variant: 'success',
-      });
-    } catch (error) {
-      toast({
-        title: 'エラーが発生しました',
-        description: '店舗の紐付け更新に失敗しました',
-        variant: 'error',
-      });
-    }
+    setIsUpdateDialogOpen(true);
   };
+
+  const selectedHouses = houses.filter((h) => h.isChecked);
 
   return (
     <div className="p-6">
@@ -148,7 +157,7 @@ export default function EditRelation() {
 
       <div className="mt-6 flex justify-end">
         <button
-          onClick={() => setIsUpdateDialogOpen(true)}
+          onClick={handleOpenDialog}
           className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
         >
           紐付け変更
@@ -167,14 +176,12 @@ export default function EditRelation() {
               に変更します。
             </p>
             <div className="mt-4 space-y-2">
-              {houses
-                .filter((house) => house.isChecked)
-                .map((house) => (
-                  <div key={house.id} className="flex items-center gap-2">
-                    <Home className="w-4 h-4 text-gray-400" />
-                    <span>{house.apartment}</span>
-                  </div>
-                ))}
+              {selectedHouses.map((house) => (
+                <div key={house.id} className="flex items-center gap-2">
+                  <Home className="w-4 h-4 text-gray-400" />
+                  <span>{house.apartment}</span>
+                </div>
+              ))}
             </div>
           </div>
           <DialogFooter>
@@ -184,15 +191,27 @@ export default function EditRelation() {
             >
               キャンセル
             </button>
-            <button
-              onClick={handleUpdate}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-            >
-              変更
-            </button>
+            <Form method="post">
+              <input type="hidden" name="store_id" value={newStoreId} />
+              {selectedHouses.map((house) => (
+                <input
+                  key={house.id}
+                  type="hidden"
+                  name="ids"
+                  value={house.id}
+                />
+              ))}
+              <button
+                type="submit"
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+              >
+                変更
+              </button>
+            </Form>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
-};
+}
+

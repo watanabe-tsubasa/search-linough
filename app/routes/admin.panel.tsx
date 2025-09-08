@@ -1,9 +1,21 @@
 // 管理画面のトップページ sidebarとoutletを配置
-import { Edit, Home, LinkIcon, Menu, PanelLeftClose, PlusCircle, Store, X } from "lucide-react";
+import { Edit, Home, LinkIcon, List, Menu, PanelLeftClose, PlusCircle, Store, X } from "lucide-react";
 import { useState } from "react";
-import { NavLink, Outlet } from "react-router";
+import { NavLink, Outlet, type LoaderFunctionArgs } from "react-router";
+import { requireUserSession } from "~/lib/session.server";
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  await requireUserSession(request);
+  return null;
+};
 
 const sidebarItems = [
+  {
+    label: '店舗一覧',
+    path: '/admin/panel/listStore',
+    icon: List,
+    group: 'store',
+  },
   {
     label: '店舗追加',
     path: '/admin/panel/addStore',
@@ -15,6 +27,12 @@ const sidebarItems = [
     path: '/admin/panel/editStore',
     icon: Edit,
     group: 'store',
+  },
+  {
+    label: 'マンション一覧',
+    path: '/admin/panel/listHouse',
+    icon: List,
+    group: 'house',
   },
   {
     label: 'マンション追加',

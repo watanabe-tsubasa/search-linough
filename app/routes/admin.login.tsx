@@ -1,19 +1,44 @@
 import { Lock, Mail } from "lucide-react";
-import { Form, redirect, useLoaderData, type ActionFunctionArgs } from "react-router"
-
-// 管理画面 へのログインsupabase authをgoogleアカウントに対して実行
-export const loader = async () => {
-  return { data: 'login' }
-}
+import {
+  Form,
+  redirect,
+  useActionData,
+  type ActionFunctionArgs,
+} from "react-router";
+import { supabase } from "~/lib/supabase/server";
+import { getSession, commitSession } from "~/lib/session.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const formData = await request.formData();
-  console.log(formData);
-  return redirect('/admin/panel');
-}
+  const email = String(formData.get("email") || "");
+  const password = String(formData.get("password") || "");
+
+  if (!email || !password) {
+    return { error: "メールアドレスとパスワードを入力してください。" };
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    console.error("Login failed:", error);
+    return { error: "ログインに失敗しました。" };
+  }
+
+  const session = await getSession(request);
+  session.set("authenticated", true);
+
+  return redirect("/admin/panel", {
+    headers: {
+      "Set-Cookie": await commitSession(session),
+    },
+  });
+};
 
 export default function AdminLogin() {
-  const { data } = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -21,7 +46,7 @@ export default function AdminLogin() {
           <Lock className="h-12 w-12 text-indigo-600" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Admin Login {data}
+          Admin Login
         </h2>
       </div>
 
@@ -67,6 +92,11 @@ export default function AdminLogin() {
               </div>
             </div>
 
+            {actionData?.error && (
+              <p className="text-sm text-red-600" role="alert">
+                {actionData.error}
+              </p>
+            )}
             <div>
               <button
                 type="submit"
@@ -80,4 +110,4 @@ export default function AdminLogin() {
       </div>
     </div>
   );
-};
+}
