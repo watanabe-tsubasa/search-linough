@@ -1,42 +1,43 @@
 // 店名を変更削除する
 
-import { Store } from "lucide-react";
+import { Store as StoreIcon } from "lucide-react";
 import { useState } from "react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "~/components/Dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/Dialog";
 import { useToast } from "~/Hooks/use-toast";
-import { mockApiCall } from "~/utils";
+import { fetchStores, updateStore, deleteStore } from "~/lib/supabase/db";
+import type { Store } from "~/types";
+import { useLoaderData } from "react-router";
 
-interface StoreData {
-  id: number;
-  store_id: string;
-  store: string;
+interface StoreData extends Store {
   isChecked: boolean;
   originalStore: string;
 }
 
+export const loader = async () => {
+  const stores = await fetchStores();
+  return { stores };
+};
+
 export default function EditStore() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const { stores: loaderStores } = useLoaderData<typeof loader>();
+  const [searchTerm, setSearchTerm] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  // Mock data
-  const [stores, setStores] = useState<StoreData[]>([
-    {
-      id: 1,
-      store_id: '0105123456789',
-      store: '東京店',
+  const [stores, setStores] = useState<StoreData[]>(
+    loaderStores.map((s) => ({
+      ...s,
       isChecked: false,
-      originalStore: '東京店',
-    },
-    {
-      id: 2,
-      store_id: '0105987654321',
-      store: '大阪店',
-      isChecked: false,
-      originalStore: '大阪店',
-    },
-  ]);
+      originalStore: s.store,
+    }))
+  );
 
   const filteredStores = stores.filter((store) =>
     store.store.toLowerCase().includes(searchTerm.toLowerCase())
@@ -62,7 +63,7 @@ export default function EditStore() {
     const modifiedStores = stores.filter(
       (store) => store.store !== store.originalStore
     );
-    
+
     if (modifiedStores.length === 0) {
       toast({
         title: '変更がありません',
@@ -72,7 +73,11 @@ export default function EditStore() {
     }
 
     try {
-      await mockApiCall(modifiedStores);
+      await Promise.all(
+        modifiedStores.map((s) =>
+          updateStore(s.store_id, { store: s.store })
+        )
+      );
       toast({
         title: '店舗を更新しました',
         variant: 'success',
@@ -95,7 +100,9 @@ export default function EditStore() {
   const handleDelete = async () => {
     const selectedStores = stores.filter((store) => store.isChecked);
     try {
-      await mockApiCall(selectedStores);
+      await Promise.all(
+        selectedStores.map((s) => deleteStore(s.store_id))
+      );
       setStores(stores.filter((store) => !store.isChecked));
       setIsDeleteDialogOpen(false);
       toast({
@@ -206,7 +213,7 @@ export default function EditStore() {
                 .filter((store) => store.isChecked)
                 .map((store) => (
                   <div key={store.id} className="flex items-center gap-2">
-                    <Store className="w-4 h-4 text-gray-400" />
+                    <StoreIcon className="w-4 h-4 text-gray-400" />
                     <span>{store.store}</span>
                   </div>
                 ))}
