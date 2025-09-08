@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Home, X } from "lucide-react";
 import { AddFormPanel, commonAddFormLoader } from "~/components/AddFormPanel";
-import type { House, NewHouse, Store } from "~/types";
+import type { NewHouse, Store } from "~/types";
 import {
   redirect,
   useLoaderData,
@@ -44,7 +44,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   try {
-    // await insertHouse(houses);
+    await insertHouse(houses);
     return redirect("/admin/panel/addHouse?success=1");
   } catch (error) {
     console.error(error);
