@@ -11,7 +11,7 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export const loader = async () => {
-  return { stores: fetchStores() };
+  return { stores: await fetchStores() };
 };
 
 export async function action({ request }: { request: Request }) {
