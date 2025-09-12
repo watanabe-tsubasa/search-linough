@@ -1,4 +1,4 @@
-// マンションを追加する
+// // マンションを追加する
 
 import { useState } from "react";
 import { Home, X } from "lucide-react";
@@ -10,12 +10,41 @@ import {
   type LoaderFunctionArgs,
   type ActionFunctionArgs,
 } from "react-router";
-import { fetchStores, insertHouse } from "~/lib/supabase/db";
+// import { fetchStores, insertHouse } from "~/lib/supabase/db";
 import { FormField, StoreSearchFormInput } from "~/components/FormUI";
 
+const fetchDummyStores = async () => {
+  return [
+    {
+      id: 33,
+      store_id: "01050000002420",
+      store: "イオンワンダーシティ店",
+    }, {
+      id: 116,
+      store_id: "01050000011120",
+      store: "イオン三原店",
+    }, {
+      id: 2,
+      store_id: "01050000001140",
+      store: "イオン三好店",
+    }, {
+      id: 76,
+      store_id: "01050000004740",
+      store: "イオン三木店",
+    }, {
+      id: 66,
+      store_id: "01050000004250",
+      store: "イオン三田ウッディタウン店",
+    },
+  ]
+}
+
 export const loader = async (args: LoaderFunctionArgs) => {
+  const { fetchStores, insertHouse } = await import("~/lib/supabase/db");
   const { success } = await commonAddFormLoader(args);
-  return { success, stores: fetchStores() };
+  const stores  = await fetchDummyStores();
+  console.log(stores);
+  return { success, stores: stores };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -58,6 +87,7 @@ export type NewHouseWithStore = NewHouse & {
 
 
 export default function AddHouse() {
+
   const defaultFormData: NewHouseWithStore[] = [
     {
       store: "",
@@ -138,7 +168,7 @@ const HouseForm = ({
   form: NewHouseWithStore;
   onChange: (index: number, field: keyof NewHouseWithStore, value: string | number) => void;
   onRemove: (index: number) => void;
-  stores: Promise<Store[]>;
+  stores: Store[];
 }) => {
   return (
     <div className="relative bg-white rounded-lg shadow p-6">
