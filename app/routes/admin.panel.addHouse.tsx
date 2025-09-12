@@ -12,6 +12,7 @@ import {
 } from "react-router";
 // import { fetchStores, insertHouse } from "~/lib/supabase/db";
 import { FormField, StoreSearchFormInput } from "~/components/FormUI";
+import { insertHouse } from "~/lib/supabase/db";
 
 const fetchDummyStores = async () => {
   return [
