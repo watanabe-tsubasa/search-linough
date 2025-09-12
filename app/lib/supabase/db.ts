@@ -14,7 +14,7 @@ import { supabase } from "./client"
  * @see {@link https://supabase.com/docs/guides/database} for more information on Supabase database operations.
  * @see {@link https://supabase.com/docs/guides/api} for more information on Supabase API operations.
  */
-export const fetchStores = async () => {
+export const fetchStores = async (): Promise<Store[]> => {
   const { data, error } = await supabase
     .from("stores")
     .select("*")
