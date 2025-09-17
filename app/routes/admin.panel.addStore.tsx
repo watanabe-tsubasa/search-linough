@@ -5,6 +5,7 @@ import type { NewStore } from "~/types";
 import { redirect, useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { insertStore } from "~/lib/supabase/db";
 import { FormField } from "~/components/FormUI";
+
 export const loader = async (args: LoaderFunctionArgs) => {
   return await commonAddFormLoader(args);
 };

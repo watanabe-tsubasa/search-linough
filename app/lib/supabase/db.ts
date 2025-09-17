@@ -1,5 +1,5 @@
 import type { House, NewHouse, NewStore, Store, UpdateHouse, UpdateStore } from "~/types"
-import { supabase } from "./client"
+import { supabase } from "./server"
 // ======================
 // === Stores (Shops) === 
 // ======================
@@ -187,6 +187,28 @@ export const fetchHouses = async (storeId: string): Promise<House[]> => {
   return data || []
 }
 
+/**
+ * Fetches all houses with their related store information.
+ * @returns {Promise<any[]>} A promise that resolves to an array of houses including store data.
+ * @example
+ * const houses = await fetchAllHouses();
+ * console.log(houses);
+ * // Output: [{ id: 1, apartment: 'Apt 1', stores: { store: 'Store A', store_id: 'a-01' } }]
+ */
+export const fetchAllHouses = async (): Promise<any[]> => {
+  const { data, error } = await supabase
+    .from('houses')
+    .select('*, stores(store, store_id)')
+    .order('apartment', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching houses:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
 // /**
 //  * Fetches all apartments for a given store from the database.
 //  * This function returns a promise that resolves to an array of apartments.
@@ -336,6 +358,29 @@ export const deleteMultipleHouses = async (ids: number[]): Promise<boolean> => {
 
   if (error) {
     console.error("Error deleting multiple apartments:", error)
+    return false
+  }
+
+  return true
+}
+
+/**
+ * Updates the store_id for multiple houses in a single operation.
+ * @param ids - Array of house IDs to update.
+ * @param store_id - The new store code to associate with the houses.
+ * @returns {Promise<boolean>} A promise that resolves to true if update succeeded, false otherwise.
+ */
+export const updateHousesStore = async (
+  ids: number[],
+  store_id: string
+): Promise<boolean> => {
+  const { error } = await supabase
+    .from("houses")
+    .update({ store_id })
+    .in("id", ids)
+
+  if (error) {
+    console.error("Error updating houses store:", error)
     return false
   }
 
