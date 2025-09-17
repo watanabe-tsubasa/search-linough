@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLoaderData } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import type { LoaderFunctionArgs } from "react-router";
 import { fetchStores } from "~/lib/supabase/db";
 import type { Store } from "~/types";
@@ -68,7 +68,14 @@ export default function ListStore() {
           {filteredStores.map((store: Store) => (
             <tr key={store.id} className="border-t">
               <td className="p-2">{store.store_id}</td>
-              <td className="p-2">{store.store}</td>
+              <td className="p-2">
+                <Link
+                  to={`/admin/panel/store/${store.store_id}`}
+                  className="text-blue-600 hover:underline"
+                >
+                  {store.store}
+                </Link>
+              </td>
             </tr>
           ))}
         </tbody>
