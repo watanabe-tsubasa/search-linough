@@ -5,17 +5,7 @@ import { Link, useLoaderData, useLocation } from "react-router";
 import type { LoaderFunctionArgs } from "react-router";
 import { fetchAllHouses } from "~/lib/supabase/db";
 import { useToast } from "~/Hooks/use-toast";
-
-// 型定義: stores テーブルの情報を含むマンション
-interface HouseWithStore {
-  id: number;
-  apartment: string;
-  address: string;
-  stores?: {
-    store: string;
-    store_id: string;
-  } | null;
-}
+import type { HouseWithStore } from "~/types";
 
 export const loader = async (_args: LoaderFunctionArgs) => {
   const houses = await fetchAllHouses();
@@ -40,7 +30,7 @@ export default function ListHouse() {
     }
   }, [location.search, toast]);
 
-  const filteredHouses = [...(houses as HouseWithStore[])]
+  const filteredHouses: HouseWithStore[] = [...houses]
     .filter((h) =>
       h.apartment.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (h.stores?.store ?? "").toLowerCase().includes(searchTerm.toLowerCase())

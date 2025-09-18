@@ -1,96 +1,193 @@
 // app/routes/admin.panel.editHouse.tsx
 
 import { Home } from "lucide-react";
-import { useState } from "react";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "~/components/Dialog";
-import { useToast } from "~/Hooks/use-toast";
-import type { House } from "~/types";
-import { mockApiCall } from "~/utils";
+import { useMemo, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/Dialog";
+import { useQueryToast } from "~/Hooks/useQueryToast";
+import {
+  deleteMultipleHouses,
+  fetchAllHouses,
+  updateHouse,
+} from "~/lib/supabase/db";
+import {
+  redirect,
+  useFetcher,
+  useLoaderData,
+  type ActionFunctionArgs,
+  type LoaderFunctionArgs,
+} from "react-router";
+import type { House, HouseWithStore } from "~/types";
 
-interface HouseData extends House {
-  isChecked: boolean;
+// ========== Loader ==========
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const url = new URL(request.url);
+  const type = url.searchParams.get("type");
+  const status = url.searchParams.get("status");
+
+  const houses = await fetchAllHouses();
+
+  return { houses, type, status };
+};
+
+// ========== Action ==========
+export async function action({ request }: ActionFunctionArgs) {
+  const form = await request.formData();
+  const intent = form.get("intent");
+
+  try {
+    if (intent === "update") {
+      const payload = JSON.parse(
+        String(form.get("payload") ?? "{}")
+      ) as Partial<House> & { id?: number };
+
+      if (!payload.id) {
+        throw new Error("Invalid payload");
+      }
+
+      const households = Number(payload.households ?? 0);
+
+      if (Number.isNaN(households)) {
+        throw new Error("Invalid households value");
+      }
+
+      await updateHouse(payload.id, {
+        apartment: payload.apartment,
+        address: payload.address,
+        post: payload.post,
+        prefectures: payload.prefectures,
+        households,
+      });
+
+      return redirect(
+        "/admin/panel/editHouse?type=update&status=success"
+      );
+    }
+
+    if (intent === "delete") {
+      const ids = JSON.parse(
+        String(form.get("ids") ?? "[]")
+      ) as Array<number>;
+
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw new Error("No ids provided");
+      }
+
+      await deleteMultipleHouses(ids);
+
+      return redirect(
+        "/admin/panel/editHouse?type=delete&status=success"
+      );
+    }
+  } catch (error) {
+    console.error("Failed to process editHouse action", error);
+    return redirect("/admin/panel/editHouse?status=error");
+  }
+
+  return new Response("Bad Request", { status: 400 });
 }
 
+// ========== Component ==========
 export default function EditHouse() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const { houses, type, status } = useLoaderData<typeof loader>();
+  const fetcher = useFetcher();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedHouse, setSelectedHouse] = useState<HouseData | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const { toast } = useToast();
-
-  // Mock data
-  const [houses, setHouses] = useState<HouseData[]>([
-    {
-      id: 1,
-      store_id: '0105123456789',
-      apartment: 'サンプルマンション',
-      address: '東京都新宿区1-1-1',
-      post: '160-0022',
-      prefectures: '東京都',
-      households: 100,
-      isChecked: false,
-    },
-  ]);
-
-  const filteredHouses = houses.filter((house) =>
-    house.apartment.toLowerCase().includes(searchTerm.toLowerCase())
+  const [selectedHouse, setSelectedHouse] = useState<HouseWithStore | null>(
+    null
   );
 
-  const handleCheckboxChange = (id: number) => {
-    setHouses(
-      houses.map((house) =>
-        house.id === id ? { ...house, isChecked: !house.isChecked } : house
-      )
+  const filteredHouses = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return houses.filter((house) =>
+      house.apartment.toLowerCase().includes(term)
     );
+  }, [houses, searchTerm]);
+
+  const handleCheckboxChange = (id: number, checked: boolean) => {
+    setSelectedIds((prev) => {
+      if (checked) {
+        return [...prev, id];
+      }
+      return prev.filter((value) => value !== id);
+    });
   };
 
-  const handleEdit = (house: HouseData) => {
+  const handleEdit = (house: HouseWithStore) => {
     setSelectedHouse(house);
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdate = async () => {
+  const handleUpdate = () => {
     if (!selectedHouse) return;
 
-    try {
-      await mockApiCall(selectedHouse);
-      setHouses(
-        houses.map((house) =>
-          house.id === selectedHouse.id ? selectedHouse : house
-        )
-      );
-      toast({
-        title: 'マンションを更新しました',
-        variant: 'success',
-      });
-      setIsEditDialogOpen(false);
-    } catch (error) {
-      toast({
-        title: 'エラーが発生しました',
-        description: 'マンションの更新に失敗しました',
-        variant: 'error',
-      });
-    }
+    fetcher.submit(
+      {
+        intent: "update",
+        payload: JSON.stringify({
+          id: selectedHouse.id,
+          apartment: selectedHouse.apartment,
+          address: selectedHouse.address,
+          post: selectedHouse.post,
+          prefectures: selectedHouse.prefectures,
+          households: selectedHouse.households,
+        }),
+      },
+      { method: "post" }
+    );
+
+    setIsEditDialogOpen(false);
+    setSelectedHouse(null);
   };
 
-  const handleDelete = async () => {
-    const selectedHouses = houses.filter((house) => house.isChecked);
-    try {
-      await mockApiCall(selectedHouses);
-      setHouses(houses.filter((house) => !house.isChecked));
-      setIsDeleteDialogOpen(false);
-      toast({
-        title: 'マンションを削除しました',
-        variant: 'success',
-      });
-    } catch (error) {
-      toast({
-        title: 'エラーが発生しました',
-        description: 'マンションの削除に失敗しました',
-        variant: 'error',
-      });
-    }
+  const handleDelete = () => {
+    if (selectedIds.length === 0) return;
+
+    fetcher.submit(
+      { intent: "delete", ids: JSON.stringify(selectedIds) },
+      { method: "post" }
+    );
+
+    setIsDeleteDialogOpen(false);
+    setSelectedIds([]);
   };
+
+  const isProcessing = fetcher.state !== "idle";
+  const housesForDelete = houses.filter((house) =>
+    selectedIds.includes(house.id)
+  );
+
+  const messages = useMemo(
+    () => ({
+      status: {
+        success: {
+          title: "処理が成功しました",
+        },
+      },
+      type: {
+        update: {
+          title: "マンションを更新しました",
+        },
+        delete: {
+          title: "マンションを削除しました",
+        },
+      },
+    }),
+    []
+  );
+
+  useQueryToast({
+    query: { status, type },
+    messages,
+    basePath: "/admin/panel/editHouse",
+  });
 
   return (
     <div className="p-6">
@@ -112,8 +209,10 @@ export default function EditHouse() {
             <div className="flex items-start gap-4">
               <input
                 type="checkbox"
-                checked={house.isChecked}
-                onChange={() => handleCheckboxChange(house.id)}
+                checked={selectedIds.includes(house.id)}
+                onChange={(e) =>
+                  handleCheckboxChange(house.id, e.currentTarget.checked)
+                }
                 className="mt-1"
               />
               <div className="flex-1">
@@ -131,6 +230,11 @@ export default function EditHouse() {
                   〒{house.post} {house.prefectures}
                 </p>
                 <p className="text-gray-500 text-sm">世帯数: {house.households}</p>
+                {house.stores?.store && (
+                  <p className="text-gray-500 text-sm">
+                    担当店舗: {house.stores.store}（{house.store_id}）
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -140,7 +244,8 @@ export default function EditHouse() {
       <div className="mt-6 flex justify-end">
         <button
           onClick={() => setIsDeleteDialogOpen(true)}
-          className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+          className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
+          disabled={selectedIds.length === 0 || isProcessing}
         >
           一括削除
         </button>
@@ -156,14 +261,12 @@ export default function EditHouse() {
               選択したマンションを削除します。この操作は取り消せません。
             </p>
             <div className="mt-4 space-y-2">
-              {houses
-                .filter((house) => house.isChecked)
-                .map((house) => (
-                  <div key={house.id} className="flex items-center gap-2">
-                    <Home className="w-4 h-4 text-gray-400" />
-                    <span>{house.apartment}</span>
-                  </div>
-                ))}
+              {housesForDelete.map((house) => (
+                <div key={house.id} className="flex items-center gap-2">
+                  <Home className="w-4 h-4 text-gray-400" />
+                  <span>{house.apartment}</span>
+                </div>
+              ))}
             </div>
           </div>
           <DialogFooter>
@@ -175,7 +278,8 @@ export default function EditHouse() {
             </button>
             <button
               onClick={handleDelete}
-              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
+              disabled={isProcessing}
             >
               削除
             </button>
@@ -183,7 +287,15 @@ export default function EditHouse() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) {
+            setSelectedHouse(null);
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>マンション情報の編集</DialogTitle>
@@ -199,10 +311,11 @@ export default function EditHouse() {
                     type="text"
                     value={selectedHouse.apartment}
                     onChange={(e) =>
-                      setSelectedHouse({
-                        ...selectedHouse,
-                        apartment: e.target.value,
-                      })
+                      setSelectedHouse((prev) =>
+                        prev
+                          ? { ...prev, apartment: e.target.value }
+                          : prev
+                      )
                     }
                     className="w-full p-2 border rounded-md"
                   />
@@ -215,10 +328,11 @@ export default function EditHouse() {
                     type="text"
                     value={selectedHouse.address}
                     onChange={(e) =>
-                      setSelectedHouse({
-                        ...selectedHouse,
-                        address: e.target.value,
-                      })
+                      setSelectedHouse((prev) =>
+                        prev
+                          ? { ...prev, address: e.target.value }
+                          : prev
+                      )
                     }
                     className="w-full p-2 border rounded-md"
                   />
@@ -232,10 +346,11 @@ export default function EditHouse() {
                       type="text"
                       value={selectedHouse.post}
                       onChange={(e) =>
-                        setSelectedHouse({
-                          ...selectedHouse,
-                          post: e.target.value,
-                        })
+                        setSelectedHouse((prev) =>
+                          prev
+                            ? { ...prev, post: e.target.value }
+                            : prev
+                        )
                       }
                       className="w-full p-2 border rounded-md"
                     />
@@ -248,10 +363,11 @@ export default function EditHouse() {
                       type="text"
                       value={selectedHouse.prefectures}
                       onChange={(e) =>
-                        setSelectedHouse({
-                          ...selectedHouse,
-                          prefectures: e.target.value,
-                        })
+                        setSelectedHouse((prev) =>
+                          prev
+                            ? { ...prev, prefectures: e.target.value }
+                            : prev
+                        )
                       }
                       className="w-full p-2 border rounded-md"
                     />
@@ -265,10 +381,14 @@ export default function EditHouse() {
                     type="number"
                     value={selectedHouse.households}
                     onChange={(e) =>
-                      setSelectedHouse({
-                        ...selectedHouse,
-                        households: Number(e.target.value),
-                      })
+                      setSelectedHouse((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              households: Number(e.target.value) || 0,
+                            }
+                          : prev
+                      )
                     }
                     className="w-full p-2 border rounded-md"
                     min="0"
@@ -286,7 +406,8 @@ export default function EditHouse() {
             </button>
             <button
               onClick={handleUpdate}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+              disabled={isProcessing}
             >
               更新
             </button>
@@ -295,4 +416,4 @@ export default function EditHouse() {
       </Dialog>
     </div>
   );
-};
+}
