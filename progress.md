@@ -13,16 +13,19 @@
 [x]ログインページにメールアドレス・パスワード認証と簡易バリデーションを追加しました。
 [x]店舗・マンションの詳細編集フォームに基本的な入力値のバリデーションとエラーメッセージ表示を追加しました。
 [x]管理画面へのアクセスにセッションベースの認証を導入し、Supabase の URL とキーをサーバー側環境変数で扱うことでフロントへの露出を避けました。
+[x]マンション編集ページの Supabase 連携を型定義で補強し、トースト表示とダイアログ制御の安定性を高めました。
 
 ## 今後の課題
 
-[]`app/routes/admin.panel.editHouse.tsx`をmock dataから実際のsupabaseを変更するコードへと変更
-[]data fetch, toast表示ロジックの統一
+[x]`app/routes/admin.panel.editHouse.tsx`をmock dataから実際のsupabaseを変更するコードへと変更
+[x]data fetch, toast表示ロジックの統一
 
 - data fetch はReactRouterV7の方式に則り、statelessかつ更新はForm, useFetcher, actionを中心とした設計。toast表示は実行後query parameter付きのurlにuseNavigateにリダイレクトすることで表示し、その後query parameterを削除する。
 - toast表示は'./app/Hooks/useQueryToast.ts'を利用
 - 基本的な実装の型は'./app/routes/admin.panel.editStore.tsx'を参照
-[]各routes内のファイルを確認し、対象となる`.tsx`ファイルをリストアップ
-[]各リストアップしたファイルの修正
+[x]各routes内のファイルを確認し、対象となる`.tsx`ファイルをリストアップ
+  - [x]app/routes/admin.panel.listHouse.tsx
+  - [x]app/routes/admin.panel.editRelation.tsx
+[x]各リストアップしたファイルの修正
 
 []各routesファイルに記載されているタスクの処理

@@ -13,11 +13,11 @@ import {
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "~/components/Dialog";
 import { useToast } from "~/Hooks/use-toast";
 import { fetchAllHouses, updateHousesStore } from "~/lib/supabase/db";
-import type { House } from "~/types";
+import type { HouseWithStore } from "~/types";
 
-interface HouseData extends House {
+type HouseSelection = HouseWithStore & {
   isChecked: boolean;
-}
+};
 
 export const loader = async (_args: LoaderFunctionArgs) => {
   const houses = await fetchAllHouses();
@@ -42,8 +42,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function EditRelation() {
   const { houses: loaderHouses } = useLoaderData<typeof loader>();
-  const [houses, setHouses] = useState<HouseData[]>(() =>
-    loaderHouses.map((h: any) => ({ ...(h as House), isChecked: false }))
+  const [houses, setHouses] = useState<HouseSelection[]>(() =>
+    loaderHouses.map((house) => ({ ...house, isChecked: false }))
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [newStoreId, setNewStoreId] = useState("");
@@ -52,7 +52,9 @@ export default function EditRelation() {
   const location = useLocation();
 
   useEffect(() => {
-    setHouses(loaderHouses.map((h: any) => ({ ...(h as House), isChecked: false })));
+    setHouses(
+      loaderHouses.map((house) => ({ ...house, isChecked: false }))
+    );
   }, [loaderHouses]);
 
   useEffect(() => {

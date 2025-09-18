@@ -1,4 +1,12 @@
-import type { House, NewHouse, NewStore, Store, UpdateHouse, UpdateStore } from "~/types"
+import type {
+  House,
+  HouseWithStore,
+  NewHouse,
+  NewStore,
+  Store,
+  UpdateHouse,
+  UpdateStore,
+} from "~/types"
 import { supabase } from "./server"
 // ======================
 // === Stores (Shops) === 
@@ -189,24 +197,24 @@ export const fetchHouses = async (storeId: string): Promise<House[]> => {
 
 /**
  * Fetches all houses with their related store information.
- * @returns {Promise<any[]>} A promise that resolves to an array of houses including store data.
+ * @returns {Promise<HouseWithStore[]>} A promise that resolves to an array of houses including store data.
  * @example
  * const houses = await fetchAllHouses();
  * console.log(houses);
  * // Output: [{ id: 1, apartment: 'Apt 1', stores: { store: 'Store A', store_id: 'a-01' } }]
  */
-export const fetchAllHouses = async (): Promise<any[]> => {
+export const fetchAllHouses = async (): Promise<HouseWithStore[]> => {
   const { data, error } = await supabase
-    .from('houses')
-    .select('*, stores(store, store_id)')
-    .order('apartment', { ascending: true });
+    .from("houses")
+    .select("*, stores(store, store_id)")
+    .order("apartment", { ascending: true })
 
   if (error) {
-    console.error('Error fetching houses:', error);
-    return [];
+    console.error("Error fetching houses:", error)
+    return []
   }
 
-  return data || [];
+  return (data ?? []) as HouseWithStore[]
 }
 
 // /**

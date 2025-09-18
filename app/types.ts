@@ -7,4 +7,8 @@ export type UpdateHouse = TablesUpdate<'houses'>
 
 export type Store = Tables<'stores'>
 export type NewStore = TablesInsert<'stores'>
-export type UpdateStore = TablesUpdate<'stores'> 
+export type UpdateStore = TablesUpdate<'stores'>
+
+export type HouseWithStore = House & {
+  stores: Pick<Store, 'store' | 'store_id'> | null
+}
