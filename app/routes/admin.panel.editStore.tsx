@@ -1,7 +1,7 @@
-// 店名を変更削除する
+// app/routes/admin.panel.editStore.tsx
 
 import { Store as StoreIcon } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,126 +9,121 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/Dialog";
-import { useToast } from "~/Hooks/use-toast";
-import { fetchStores, updateStore, deleteStore } from "~/lib/supabase/db";
-import type { Store } from "~/types";
-import { useLoaderData } from "react-router";
+import {
+  fetchStores,
+  updateStore,
+  deleteStore
+} from "~/lib/supabase/db";
+import {
+  redirect,
+  useFetcher,
+  useLoaderData,
+  type ActionFunctionArgs,
+  type LoaderFunctionArgs,
+} from "react-router";
+import { useQueryToast } from "~/Hooks/useQueryToast";
 
-interface StoreData extends Store {
-  isChecked: boolean;
-  originalStore: string;
-}
+// ========== Loader ==========
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const url = new URL(request.url);
+  const type = url.searchParams.get("type");
+  const status = url.searchParams.get("status");
 
-export const loader = async () => {
   const stores = await fetchStores();
-  return { stores };
+  return { stores, type, status };
 };
 
+// ========== Action ==========
+export async function action({ request }: ActionFunctionArgs) {
+  const form = await request.formData();
+  const intent = form.get("intent");
+
+  try {
+    if (intent === "update") {
+      const items = JSON.parse(
+        String(form.get("payload") ?? "[]")
+      ) as Array<{ store_id: string | number; store: string }>;
+
+      await Promise.all(
+        items.map((s) =>
+          updateStore(String(s.store_id), { store: s.store })
+        )
+      );
+      return redirect(
+        "/admin/panel/editStore?type=update&status=success"
+      );
+    }
+
+    if (intent === "delete") {
+      const ids = JSON.parse(
+        String(form.get("ids") ?? "[]")
+      ) as Array<string | number>;
+
+      await Promise.all(ids.map((id) => deleteStore(String(id))));
+      return redirect(
+        "/admin/panel/editStore?type=delete&status=success"
+      );
+    }
+  } catch (error) {
+    return redirect("/admin/panel/editStore?status=error");
+  }
+
+  return new Response("Bad Request", { status: 400 });
+}
+
+// ========== Component ==========
 export default function EditStore() {
-  const { stores: loaderStores } = useLoaderData<typeof loader>();
+  const { stores, type, status } = useLoaderData<typeof loader>();
+  const fetcher = useFetcher();
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
-  const { toast } = useToast();
 
-  const [stores, setStores] = useState<StoreData[]>(
-    loaderStores.map((s) => ({
-      ...s,
-      isChecked: false,
-      originalStore: s.store,
-    }))
-  );
-
+  // フィルタリング
   const filteredStores = stores.filter((store) =>
     store.store.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleCheckboxChange = (id: number) => {
-    setStores(
-      stores.map((store) =>
-        store.id === id ? { ...store, isChecked: !store.isChecked } : store
-      )
+  // 店舗名の更新（blur で即送信）
+  const handleUpdate = (store_id: string, newName: string) => {
+    fetcher.submit(
+      {
+        intent: "update",
+        payload: JSON.stringify([{ store_id, store: newName }]),
+      },
+      { method: "post" }
     );
   };
 
-  const handleStoreNameChange = (id: number, newName: string) => {
-    setStores(
-      stores.map((store) =>
-        store.id === id ? { ...store, store: newName } : store
-      )
+  // 削除実行
+  const handleDelete = (ids: string[]) => {
+    fetcher.submit(
+      { intent: "delete", ids: JSON.stringify(ids) },
+      { method: "post" }
     );
+    setIsDeleteDialogOpen(false);
   };
 
-  const handleUpdate = async () => {
-    const modifiedStores = stores.filter(
-      (store) => store.store !== store.originalStore
-    );
+  // Toast 表示とクエリ削除
+  const messages = useMemo(() => ({
+    status: { success: { title: "処理が成功しました" } },
+    type: {
+      update: { title: "店舗を更新しました" },
+      delete: { title: "店舗を削除しました" },
+    },
+  }), []);
 
-    if (modifiedStores.length === 0) {
-      toast({
-        title: '変更がありません',
-        variant: 'default',
-      });
-      return;
-    }
-
-    try {
-      await Promise.all(
-        modifiedStores.map((s) =>
-          updateStore(s.store_id, { store: s.store })
-        )
-      );
-      toast({
-        title: '店舗を更新しました',
-        variant: 'success',
-      });
-      setStores(
-        stores.map((store) => ({
-          ...store,
-          originalStore: store.store,
-        }))
-      );
-    } catch (error) {
-      toast({
-        title: 'エラーが発生しました',
-        description: '店舗の更新に失敗しました',
-        variant: 'error',
-      });
-    }
-  };
-
-  const handleDelete = async () => {
-    const selectedStores = stores.filter((store) => store.isChecked);
-    try {
-      await Promise.all(
-        selectedStores.map((s) => deleteStore(s.store_id))
-      );
-      setStores(stores.filter((store) => !store.isChecked));
-      setIsDeleteDialogOpen(false);
-      toast({
-        title: '店舗を削除しました',
-        variant: 'success',
-      });
-    } catch (error) {
-      setIsDeleteDialogOpen(false);
-      setIsErrorDialogOpen(true);
-    }
-  };
-
-  const handleReset = () => {
-    setStores(
-      stores.map((store) => ({
-        ...store,
-        store: store.originalStore,
-        isChecked: false,
-      }))
-    );
-  };
+  useQueryToast({
+    query: { status, type },
+    messages: messages,
+    basePath: "/admin/panel/editStore",
+  });
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">店舗変更・削除</h1>
 
+      {/* 検索 */}
       <div className="mb-6">
         <input
           type="text"
@@ -139,14 +134,32 @@ export default function EditStore() {
         />
       </div>
 
+      {/* 店舗一覧 */}
       <div className="space-y-4">
         {filteredStores.map((store) => (
-          <div key={store.id} className="bg-white rounded-lg shadow p-6">
+          <div
+            key={store.store_id}
+            className="bg-white rounded-lg shadow p-6"
+          >
             <div className="flex items-start gap-4">
+              {/* 削除用チェックボックス */}
               <input
                 type="checkbox"
-                checked={store.isChecked}
-                onChange={() => handleCheckboxChange(store.id)}
+                value={store.store_id}
+                checked={selectedIds.includes(store.store_id)}
+                onChange={(e) => {
+                  const checked = e.currentTarget.checked;
+                  if (checked) {
+                    setSelectedIds((prev) => [
+                      ...prev,
+                      store.store_id,
+                    ]);
+                  } else {
+                    setSelectedIds((prev) =>
+                      prev.filter((id) => id !== store.store_id)
+                    );
+                  }
+                }}
                 className="mt-1"
               />
               <div className="flex-1 grid grid-cols-2 gap-4">
@@ -167,8 +180,10 @@ export default function EditStore() {
                   </label>
                   <input
                     type="text"
-                    value={store.store}
-                    onChange={(e) => handleStoreNameChange(store.id, e.target.value)}
+                    defaultValue={store.store}
+                    onBlur={(e) =>
+                      handleUpdate(store.store_id, e.currentTarget.value)
+                    }
                     className="w-full p-2 border rounded-md"
                   />
                 </div>
@@ -178,27 +193,17 @@ export default function EditStore() {
         ))}
       </div>
 
+      {/* ボタン群 */}
       <div className="mt-6 flex justify-end gap-4">
-        <button
-          onClick={handleReset}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-        >
-          リセット
-        </button>
         <button
           onClick={() => setIsDeleteDialogOpen(true)}
           className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
         >
           削除
         </button>
-        <button
-          onClick={handleUpdate}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-        >
-          更新
-        </button>
       </div>
 
+      {/* 削除ダイアログ */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -210,11 +215,14 @@ export default function EditStore() {
             </p>
             <div className="mt-4 space-y-2">
               {stores
-                .filter((store) => store.isChecked)
-                .map((store) => (
-                  <div key={store.id} className="flex items-center gap-2">
+                .filter((s) => selectedIds.includes(s.store_id))
+                .map((s) => (
+                  <div
+                    key={s.store_id}
+                    className="flex items-center gap-2"
+                  >
                     <StoreIcon className="w-4 h-4 text-gray-400" />
-                    <span>{store.store}</span>
+                    <span>{s.store}</span>
                   </div>
                 ))}
             </div>
@@ -227,7 +235,7 @@ export default function EditStore() {
               キャンセル
             </button>
             <button
-              onClick={handleDelete}
+              onClick={() => handleDelete(selectedIds)}
               className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
             >
               削除
@@ -235,28 +243,6 @@ export default function EditStore() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <Dialog open={isErrorDialogOpen} onOpenChange={setIsErrorDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>削除エラー</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-gray-600">
-              選択された店舗にはマンションが紐付けられているため削除できません。
-              先にマンションとの紐付けを解除してください。
-            </p>
-          </div>
-          <DialogFooter>
-            <button
-              onClick={() => setIsErrorDialogOpen(false)}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-            >
-              閉じる
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
-};
+}

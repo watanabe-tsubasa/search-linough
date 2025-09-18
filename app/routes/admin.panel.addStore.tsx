@@ -1,3 +1,5 @@
+// app/routes/admin.panel.addStore.tsx
+
 import { useState } from "react";
 import { ShoppingBag, X } from "lucide-react";
 import { AddFormPanel, commonAddFormLoader } from "~/components/AddFormPanel";

@@ -1,4 +1,5 @@
-// 管理画面のトップページ sidebarとoutletを配置
+// app/routes/admin.panel.tsx
+
 import { Edit, Home, LinkIcon, List, Menu, PanelLeftClose, PlusCircle, Store, X } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet, type LoaderFunctionArgs } from "react-router";

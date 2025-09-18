@@ -1,3 +1,5 @@
+// app/routes/admin.panel.house.%24houseId.tsx
+
 import {
   Form,
   redirect,

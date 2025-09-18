@@ -1,4 +1,4 @@
-// マンションを削除・変更する
+// app/routes/admin.panel.editHouse.tsx
 
 import { Home } from "lucide-react";
 import { useState } from "react";

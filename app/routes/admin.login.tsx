@@ -1,3 +1,10 @@
+// app/routes/admin.login.tsx
+
+/**
+ * task
+ * - 既にloginしている場合はpanelにredirectする機能を実装
+ */
+
 import { Lock, Mail } from "lucide-react";
 import {
   Form,

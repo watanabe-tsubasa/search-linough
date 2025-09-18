@@ -1,3 +1,4 @@
+// app/routes/admin.panel._index.tsx
 import { Store } from "lucide-react";
 
 export default function AdminIndex () {

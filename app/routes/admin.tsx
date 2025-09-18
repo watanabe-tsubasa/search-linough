@@ -1,3 +1,5 @@
+// app/routes/admin.tsx
+
 import { ToastProvider } from "@radix-ui/react-toast";
 import { Outlet, useLoaderData } from "react-router";
 import { ToastRenderer } from "~/components/ToastRender";

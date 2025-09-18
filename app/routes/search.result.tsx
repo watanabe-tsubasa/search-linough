@@ -1,3 +1,5 @@
+// app/routes/search.result.tsx
+
 import { Loader2 } from "lucide-react";
 import { Suspense, useState } from "react";
 import { Await, useLoaderData, useNavigation, type LoaderFunctionArgs } from "react-router";

@@ -1,4 +1,4 @@
-// マンションと店舗のリレーションを変更する
+// app/routes/admin.panel.editRelation.tsx
 
 import { Home, LinkIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -109,9 +109,9 @@ export default function EditRelation() {
             type="text"
             value={newStoreId}
             onChange={(e) => setNewStoreId(e.target.value)}
-            placeholder="13桁のコード"
+            placeholder="14桁のコード"
             className="w-full p-2 border rounded-md"
-            maxLength={13}
+            maxLength={14}
           />
         </div>
 

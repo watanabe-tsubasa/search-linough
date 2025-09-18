@@ -1,3 +1,5 @@
+// app/routes/search.tsx
+
 import { Outlet, redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/search";
 import StoreSearch from "~/components/StoreSearcher";
@@ -11,7 +13,7 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export const loader = async () => {
-  return { stores: await fetchStores() };
+  return { stores: fetchStores() };
 };
 
 export async function action({ request }: { request: Request }) {

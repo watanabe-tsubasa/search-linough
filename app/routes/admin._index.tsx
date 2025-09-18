@@ -1,3 +1,4 @@
+// app/routes/admin._index.tsx
 import { Link, useLoaderData } from "react-router";
 
 export const loader = async () => {

@@ -1,4 +1,8 @@
-// // マンションを追加する
+// app/routes/admin.panel.addHouse.tsx
+/**
+ * task
+ * - <StoreSearchFormInput />を選択しても値が入らない理由を検証し修正
+ */
 
 import { useState } from "react";
 import { Home, X } from "lucide-react";
@@ -10,40 +14,12 @@ import {
   type LoaderFunctionArgs,
   type ActionFunctionArgs,
 } from "react-router";
-// import { fetchStores, insertHouse } from "~/lib/supabase/db";
+import { fetchStores, insertHouse } from "~/lib/supabase/db";
 import { FormField, StoreSearchFormInput } from "~/components/FormUI";
-import { insertHouse } from "~/lib/supabase/db";
-
-const fetchDummyStores = async () => {
-  return [
-    {
-      id: 33,
-      store_id: "01050000002420",
-      store: "イオンワンダーシティ店",
-    }, {
-      id: 116,
-      store_id: "01050000011120",
-      store: "イオン三原店",
-    }, {
-      id: 2,
-      store_id: "01050000001140",
-      store: "イオン三好店",
-    }, {
-      id: 76,
-      store_id: "01050000004740",
-      store: "イオン三木店",
-    }, {
-      id: 66,
-      store_id: "01050000004250",
-      store: "イオン三田ウッディタウン店",
-    },
-  ]
-}
 
 export const loader = async (args: LoaderFunctionArgs) => {
-  const { fetchStores, insertHouse } = await import("~/lib/supabase/db");
   const { success } = await commonAddFormLoader(args);
-  const stores  = await fetchDummyStores();
+  const stores  = await fetchStores();
   console.log(stores);
   return { success, stores: stores };
 };

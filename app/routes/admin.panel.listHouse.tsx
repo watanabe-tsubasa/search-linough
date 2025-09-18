@@ -1,3 +1,5 @@
+// app/routes/admin.panel.listHouse.tsx
+
 import { useEffect, useState } from "react";
 import { Link, useLoaderData, useLocation } from "react-router";
 import type { LoaderFunctionArgs } from "react-router";
