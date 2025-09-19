@@ -1,4 +1,9 @@
 // app/routes/admin.panel.editHouse.tsx
+/**
+ * tasks:
+ * [x] 削除ボタン等、操作するためのUIはページ上部に配置
+ * [x] マンション表示用のUIをcomponent化(./app/components/HouseCard.tsx)
+ */
 
 import { Home } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -22,6 +27,7 @@ import {
   type ActionFunctionArgs,
   type LoaderFunctionArgs,
 } from "react-router";
+import { HouseCard } from "~/components/HouseCard";
 import type { House, HouseWithStore } from "~/types";
 
 // ========== Loader ==========
@@ -190,65 +196,51 @@ export default function EditHouse() {
   });
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">マンション変更・削除</h1>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <h1 className="text-2xl font-bold">マンション変更・削除</h1>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+          <button
+            onClick={() => setIsDeleteDialogOpen(true)}
+            className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
+            disabled={selectedIds.length === 0 || isProcessing}
+          >
+            一括削除
+          </button>
+        </div>
+      </div>
 
-      <div className="mb-6">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <input
           type="text"
           placeholder="マンション名で検索..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-2 border rounded-md"
+          className="w-full md:max-w-sm p-2 border rounded-md"
         />
+        <p className="text-sm text-gray-500 md:text-right">
+          選択中: <span className="font-semibold text-gray-700">{selectedIds.length}</span> 件
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {filteredHouses.map((house) => (
-          <div key={house.id} className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-start gap-4">
-              <input
-                type="checkbox"
-                checked={selectedIds.includes(house.id)}
-                onChange={(e) =>
-                  handleCheckboxChange(house.id, e.currentTarget.checked)
-                }
-                className="mt-1"
-              />
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-medium">{house.apartment}</h3>
-                  <button
-                    onClick={() => handleEdit(house)}
-                    className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded"
-                  >
-                    編集
-                  </button>
-                </div>
-                <p className="text-gray-600">{house.address}</p>
-                <p className="text-gray-500 text-sm">
-                  〒{house.post} {house.prefectures}
-                </p>
-                <p className="text-gray-500 text-sm">世帯数: {house.households}</p>
-                {house.stores?.store && (
-                  <p className="text-gray-500 text-sm">
-                    担当店舗: {house.stores.store}（{house.store_id}）
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+          <HouseCard
+            key={house.id}
+            house={house}
+            selectable
+            selected={selectedIds.includes(house.id)}
+            onSelectChange={(checked) => handleCheckboxChange(house.id, checked)}
+            action={
+              <button
+                onClick={() => handleEdit(house)}
+                className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded"
+              >
+                編集
+              </button>
+            }
+          />
         ))}
-      </div>
-
-      <div className="mt-6 flex justify-end">
-        <button
-          onClick={() => setIsDeleteDialogOpen(true)}
-          className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
-          disabled={selectedIds.length === 0 || isProcessing}
-        >
-          一括削除
-        </button>
       </div>
 
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

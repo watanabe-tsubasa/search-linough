@@ -146,11 +146,13 @@ export default function AdminLayout() {
 
         {/* Main content */}
         <main
-          className={`flex-1 transition-all duration-300 ${
+          className={`flex-1 overflow-hidden transition-all duration-300 ${
             sidebarOpen ? 'ml-[17rem]' : 'ml-10'
-          } p-8`}
+          }`}
         >
-          <Outlet />
+          <div className="h-screen overflow-y-auto p-8">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

@@ -1,12 +1,17 @@
 // app/routes/admin.panel.addStore.tsx
+/**
+ * tasks:
+ * [x] 追加ボタン等、操作するためのUIはページ上部に配置
+ */
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ShoppingBag, X } from "lucide-react";
 import { AddFormPanel, commonAddFormLoader } from "~/components/AddFormPanel";
 import type { NewStore } from "~/types";
 import { redirect, useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { insertStore } from "~/lib/supabase/db";
 import { FormField } from "~/components/FormUI";
+import { useQueryToast } from "~/Hooks/useQueryToast";
 
 export const loader = async (args: LoaderFunctionArgs) => {
   return await commonAddFormLoader(args);
@@ -31,12 +36,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   try {
-    const res = await insertStore(stores);
-    console.log(res);
-    return redirect("/admin/panel/addStore?success=1"); // 成功時
+    await insertStore(stores);
+    return redirect("/admin/panel/addStore?type=create&status=success");
   } catch (error) {
     console.error(error);
-    return redirect("/admin/panel/addStore?success=0"); // エラー時
+    return redirect("/admin/panel/addStore?type=create&status=error");
   }
 };
 
@@ -48,7 +52,33 @@ export default function AddStore() {
   ]
   const [forms, setForms] = useState<NewStore[]>(defaultFormData);
   
-  const data = useLoaderData<typeof loader>();
+  const { status, type } = useLoaderData<typeof loader>();
+
+  const messages = useMemo(() => ({
+    status: {
+      success: {
+        title: type === "create" ? "店舗を追加しました" : "処理が成功しました",
+        variant: "success" as const,
+      },
+      error: {
+        title: "エラーが発生しました",
+        description: "店舗の登録に失敗しました",
+        variant: "error" as const,
+      },
+    },
+  }), [type]);
+
+  useQueryToast({
+    query: { status, type },
+    messages,
+    basePath: "/admin/panel/addStore",
+  });
+
+  useEffect(() => {
+    if (type === "create" && status === "success") {
+      setForms(defaultFormData);
+    }
+  }, [status, type]);
   
   const handleAddForm = () => {
     setForms([...forms, { store: "", store_id: "" }]);
@@ -75,7 +105,7 @@ export default function AddStore() {
         onAddForm={handleAddForm}
         dialogTitle="追加する店舗の確認"
         dialogContent={<ConfirmDialog stores={forms} />}
-        loaderData={data}
+        loaderData={{ status, type }}
       >
         {forms.map((form, index) => (
           <StoreForm

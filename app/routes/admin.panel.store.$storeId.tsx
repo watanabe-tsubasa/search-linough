@@ -5,17 +5,19 @@ import {
   redirect,
   useActionData,
   useLoaderData,
-  useLocation,
 } from "react-router";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { fetchStoreById, updateStore } from "~/lib/supabase/db";
-import { useEffect } from "react";
-import { useToast } from "~/Hooks/use-toast";
+import { useMemo } from "react";
+import { useQueryToast } from "~/Hooks/useQueryToast";
 
-export const loader = async ({ params }: LoaderFunctionArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const storeId = params.storeId as string;
   const store = await fetchStoreById(storeId);
-  return { store, storeId };
+  const url = new URL(request.url);
+  const status = url.searchParams.get("status");
+  const type = url.searchParams.get("type");
+  return { store, storeId, status, type };
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
@@ -38,28 +40,34 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   try {
     await updateStore(originalId, { store, store_id });
-    return redirect(`/admin/panel/store/${store_id}?success=1`);
+    return redirect(`/admin/panel/store/${store_id}?type=update&status=success`);
   } catch (error) {
     console.error(error);
-    return redirect(`/admin/panel/store/${originalId}?success=0`);
+    return redirect(`/admin/panel/store/${originalId}?type=update&status=error`);
   }
 };
 
 export default function StoreDetail() {
-  const { store } = useLoaderData<typeof loader>();
+  const { store, storeId, status, type } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
-  const location = useLocation();
-  const { toast } = useToast();
+  const messages = useMemo(() => ({
+    status: {
+      success: {
+        title: type === "update" ? "店舗を更新しました" : "処理が成功しました",
+        variant: "success" as const,
+      },
+      error: {
+        title: "更新に失敗しました",
+        variant: "error" as const,
+      },
+    },
+  }), [type]);
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const success = params.get("success");
-    if (success === "1") {
-      toast({ title: "店舗を更新しました", variant: "success" });
-    } else if (success === "0") {
-      toast({ title: "更新に失敗しました", variant: "error" });
-    }
-  }, [location.search, toast]);
+  useQueryToast({
+    query: { status, type },
+    messages,
+    basePath: `/admin/panel/store/${storeId}`,
+  });
 
   return (
     <div className="max-w-md mx-auto bg-white p-6 rounded-md shadow">

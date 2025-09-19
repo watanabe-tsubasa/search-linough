@@ -1,26 +1,23 @@
 import { Loader2 } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode, type SetStateAction } from "react";
-import { Form, useLocation, useNavigation, type LoaderFunctionArgs } from "react-router";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Form, useNavigation, type LoaderFunctionArgs } from "react-router";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "~/components/Dialog";
-import { useToast } from "~/Hooks/use-toast";
 
 type AddFormPanelProps = {
   title: string;
   onAddForm: () => void;
   dialogTitle: string;
   dialogContent: ReactNode;
-  loaderData: {success: boolean | undefined};
+  loaderData: { status: string | null; type: string | null };
   children: ReactNode;
 };
 
-export const commonAddFormLoader = async ({ request }:LoaderFunctionArgs) => {
+export const commonAddFormLoader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
-  const successParam = url.searchParams.get("success");
+  const status = url.searchParams.get("status");
+  const type = url.searchParams.get("type");
 
-  const success =
-    successParam === "1" ? true : successParam === "0" ? false : undefined;
-
-  return { success };
+  return { status, type };
 }
 
 export const AddFormPanel = ({
@@ -37,55 +34,41 @@ export const AddFormPanel = ({
   const { state } = navigation;
   const onConfirm = () => {
     formRef.current?.requestSubmit();
-    // setIsDialogOpen(false);
-  }
-  const location = useLocation();
-  const { success } = loaderData;
-  const { toast } = useToast();
+  };
+  const { status } = loaderData;
 
   useEffect(() => {
-    console.log(location.key)
-    if (success !== undefined) {
-      if (success) {
-        toast({ title: "追加", description: "登録が完了しました。", variant: "success" });
-      } else {
-        toast({ title: "エラーが発生しました", description: "登録に失敗しました。", variant: "error" });
-      }
-  
+    if (status === "success") {
       setIsDialogOpen(false);
-  
-      const url = new URL(window.location.href);
-      url.searchParams.delete("success");
-      window.history.replaceState({}, "", url.toString());
     }
-  }, [success, location.key]); // 👈 location.key を依存に追加
+  }, [status]);
   
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <h1 className="text-2xl font-bold">{title}</h1>
-        <button
-          onClick={onAddForm}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-        >
-          フォーム追加
-        </button>
+        <div className="flex flex-wrap items-center gap-3 md:justify-end">
+          <button
+            type="button"
+            onClick={onAddForm}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+          >
+            フォーム追加
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsDialogOpen(true)}
+            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
+          >
+            追加
+          </button>
+        </div>
       </div>
 
       <Form ref={formRef} method="post">
         <div className="space-y-4">{children}</div>
       </Form>
-
-      <div className="mt-6 flex justify-end">
-        <button
-          type="button"
-          onClick={() => setIsDialogOpen(true)}
-          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
-        >
-          追加
-        </button>
-      </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>

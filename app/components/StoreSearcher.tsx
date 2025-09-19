@@ -1,18 +1,26 @@
-import { Suspense, useEffect, useRef, useState } from 'react';
-import { Command } from 'cmdk';
-import { Loader2, Search } from 'lucide-react';
-import { Await, useSubmit } from 'react-router';
-import type { Store } from '~/types';
+import { Suspense, useEffect, useRef, useState } from "react";
+import { Command } from "cmdk";
+import { Loader2, Search } from "lucide-react";
+import { Await, useSubmit } from "react-router";
+import type { Store } from "~/types";
+
+type StoreSearcherProps = {
+  stores: Promise<Store[]> | Store[];
+  onSelect?: (store: Store) => void;
+  value?: string;
+  placeholder?: string;
+};
 
 export default function StoreSearch({
   stores,
-}: {
-  stores: Promise<Store[]> | Store[];
-  initialValue?: string;
-}) {
+  onSelect,
+  value,
+  placeholder = "店舗名を入力してください...",
+}: StoreSearcherProps) {
   const [open, setOpen] = useState(false);
   const submit = useSubmit();
   const commandRef = useRef<HTMLDivElement | null>(null);
+  const [inputValue, setInputValue] = useState(value ?? "");
 
   // 外側クリックを監視する
   useEffect(() => {
@@ -40,6 +48,11 @@ export default function StoreSearch({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  useEffect(() => {
+    if (value === undefined) return;
+    setInputValue(value);
+  }, [value]);
+
   return (
     <div className="relative" ref={commandRef}>
       <Suspense fallback={<DummyStoreSearch />}>
@@ -50,8 +63,10 @@ export default function StoreSearch({
                 <Search className="w-4 h-4 text-gray-400" />
                 <Command.Input
                   onFocus={() => setOpen(true)}
+                  value={inputValue}
+                  onValueChange={setInputValue}
                   className="flex-1 outline-none border-0 p-3 text-gray-900"
-                  placeholder="店舗名を入力してください..."
+                  placeholder={placeholder}
                 />
               </div>
 
@@ -64,10 +79,15 @@ export default function StoreSearch({
                         key={store.store_id}
                         value={store.store}
                         onSelect={() => {
-                          const formData = new FormData();
-                          formData.set("store", store.store);
-                          formData.set("storeId", store.store_id);
-                          submit(formData, { method: "post" });
+                          setInputValue(store.store);
+                          if (onSelect) {
+                            onSelect(store);
+                          } else {
+                            const formData = new FormData();
+                            formData.set("store", store.store);
+                            formData.set("storeId", store.store_id);
+                            submit(formData, { method: "post" });
+                          }
                           setOpen(false);
                         }}
                         className="px-2 py-1.5 rounded hover:bg-gray-100 cursor-pointer"

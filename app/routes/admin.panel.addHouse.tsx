@@ -4,7 +4,7 @@
  * - <StoreSearchFormInput />を選択しても値が入らない理由を検証し修正
  */
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Home, X } from "lucide-react";
 import { AddFormPanel, commonAddFormLoader } from "~/components/AddFormPanel";
 import type { NewHouse, Store } from "~/types";
@@ -16,18 +16,17 @@ import {
 } from "react-router";
 import { fetchStores, insertHouse } from "~/lib/supabase/db";
 import { FormField, StoreSearchFormInput } from "~/components/FormUI";
+import { useQueryToast } from "~/Hooks/useQueryToast";
 
 export const loader = async (args: LoaderFunctionArgs) => {
-  const { success } = await commonAddFormLoader(args);
+  const base = await commonAddFormLoader(args);
   const stores  = await fetchStores();
-  console.log(stores);
-  return { success, stores: stores };
+  return { ...base, stores };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const formData = await request.formData();
   const houses: NewHouse[] = [];
-  console.log(formData)
   let index = 0;
   while (true) {
     const store_id = formData.get(`houses[${index}][store_id]`);
@@ -51,10 +50,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   try {
     await insertHouse(houses);
-    return redirect("/admin/panel/addHouse?success=1");
+    return redirect("/admin/panel/addHouse?type=create&status=success");
   } catch (error) {
     console.error(error);
-    return redirect("/admin/panel/addHouse?success=0");
+    return redirect("/admin/panel/addHouse?type=create&status=error");
   }
 };
 
@@ -77,11 +76,37 @@ export default function AddHouse() {
     },
   ];
   const [forms, setForms] = useState<NewHouseWithStore[]>(defaultFormData);
-  const { success, stores } = useLoaderData<typeof loader>();
+  const { status, type, stores } = useLoaderData<typeof loader>();
+
+  const messages = useMemo(() => ({
+    status: {
+      success: {
+        title: type === "create" ? "マンションを追加しました" : "処理が成功しました",
+        variant: "success" as const,
+      },
+      error: {
+        title: "エラーが発生しました",
+        description: "マンションの登録に失敗しました",
+        variant: "error" as const,
+      },
+    },
+  }), [type]);
+
+  useQueryToast({
+    query: { status, type },
+    messages,
+    basePath: "/admin/panel/addHouse",
+  });
+
+  useEffect(() => {
+    if (type === "create" && status === "success") {
+      setForms(defaultFormData);
+    }
+  }, [status, type]);
 
   const handleAddForm = () => {
-    setForms([
-      ...forms,
+    setForms((prev) => [
+      ...prev,
       {
         store: "",
         store_id: "",
@@ -99,17 +124,21 @@ export default function AddHouse() {
     field: keyof NewHouseWithStore,
     value: string | number
   ) => {
-    const updated = [...forms];
-    updated[index] = {
-      ...updated[index],
-      [field]: field === "households" ? Number(value) : value,
-    };
-    setForms(updated);
+    setForms((prev) => {
+      const next = [...prev];
+      next[index] = {
+        ...next[index],
+        [field]: field === "households" ? Number(value) : value,
+      };
+      return next;
+    });
   };
 
   const handleRemoveForm = (index: number) => {
-    if (forms.length === 1) return;
-    setForms(forms.filter((_, i) => i !== index));
+    setForms((prev) => {
+      if (prev.length === 1) return prev;
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   return (
@@ -118,7 +147,7 @@ export default function AddHouse() {
       onAddForm={handleAddForm}
       dialogTitle="追加するマンションの確認"
       dialogContent={<HouseConfirmDialog houses={forms} />}
-      loaderData={{ success }}
+      loaderData={{ status, type }}
     >
       {forms.map((form, index) => (
         <HouseForm

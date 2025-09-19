@@ -5,17 +5,19 @@ import {
   redirect,
   useActionData,
   useLoaderData,
-  useLocation,
 } from "react-router";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { deleteHouse, fetchHouse, updateHouse } from "~/lib/supabase/db";
-import { useEffect } from "react";
-import { useToast } from "~/Hooks/use-toast";
+import { useMemo } from "react";
+import { useQueryToast } from "~/Hooks/useQueryToast";
 
-export const loader = async ({ params }: LoaderFunctionArgs) => {
+export const loader = async ({ params, request }: LoaderFunctionArgs) => {
   const houseId = Number(params.houseId);
   const house = await fetchHouse(houseId);
-  return { house, houseId };
+  const url = new URL(request.url);
+  const status = url.searchParams.get("status");
+  const type = url.searchParams.get("type");
+  return { house, houseId, status, type };
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
@@ -26,10 +28,10 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
   if (intent === "delete") {
     try {
       await deleteHouse(houseId);
-      return redirect(`/admin/panel/listHouse?deleted=1`);
+      return redirect(`/admin/panel/listHouse?type=delete&status=success`);
     } catch (error) {
       console.error(error);
-      return redirect(`/admin/panel/house/${houseId}?deleted=0`);
+      return redirect(`/admin/panel/house/${houseId}?type=delete&status=error`);
     }
   }
 
@@ -84,31 +86,39 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       prefectures,
       households,
     });
-    return redirect(`/admin/panel/house/${houseId}?success=1`);
+    return redirect(`/admin/panel/house/${houseId}?type=update&status=success`);
   } catch (error) {
     console.error(error);
-    return redirect(`/admin/panel/house/${houseId}?success=0`);
+    return redirect(`/admin/panel/house/${houseId}?type=update&status=error`);
   }
 };
 
 export default function HouseDetail() {
-  const { house } = useLoaderData<typeof loader>();
+  const { house, houseId, status, type } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
-  const location = useLocation();
-  const { toast } = useToast();
+  const messages = useMemo(() => ({
+    status: {
+      success: {
+        title:
+          type === "update"
+            ? "マンションを更新しました"
+            : type === "delete"
+            ? "マンションを削除しました"
+            : "処理が成功しました",
+        variant: "success" as const,
+      },
+      error: {
+        title: type === "delete" ? "削除に失敗しました" : "更新に失敗しました",
+        variant: "error" as const,
+      },
+    },
+  }), [type]);
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const success = params.get("success");
-    const deleted = params.get("deleted");
-    if (success === "1") {
-      toast({ title: "マンションを更新しました", variant: "success" });
-    } else if (success === "0") {
-      toast({ title: "更新に失敗しました", variant: "error" });
-    } else if (deleted === "0") {
-      toast({ title: "削除に失敗しました", variant: "error" });
-    }
-  }, [location.search, toast]);
+  useQueryToast({
+    query: { status, type },
+    messages,
+    basePath: `/admin/panel/house/${houseId}`,
+  });
 
   return (
     <div className="max-w-md mx-auto bg-white p-6 rounded-md shadow">
@@ -258,4 +268,3 @@ export default function HouseDetail() {
     </div>
   );
 }
-

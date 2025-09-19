@@ -1,4 +1,8 @@
 // app/routes/admin.panel.editStore.tsx
+/**
+ * tasks:
+ * [x] 削除ボタン等、操作するためのUIはページ上部に配置
+ */
 
 import { Store as StoreIcon } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -78,6 +82,7 @@ export default function EditStore() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const isProcessing = fetcher.state !== "idle";
 
   // フィルタリング
   const filteredStores = stores.filter((store) =>
@@ -120,17 +125,31 @@ export default function EditStore() {
   });
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">店舗変更・削除</h1>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <h1 className="text-2xl font-bold">店舗変更・削除</h1>
+        <div className="flex flex-wrap items-center gap-3 md:justify-end">
+          <span className="text-sm text-gray-500">
+            選択中: <span className="font-semibold text-gray-700">{selectedIds.length}</span> 件
+          </span>
+          <button
+            onClick={() => setIsDeleteDialogOpen(true)}
+            className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
+            disabled={selectedIds.length === 0 || isProcessing}
+          >
+            削除
+          </button>
+        </div>
+      </div>
 
       {/* 検索 */}
-      <div className="mb-6">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <input
           type="text"
           placeholder="店舗名で検索..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-2 border rounded-md"
+          className="w-full md:max-w-sm p-2 border rounded-md"
         />
       </div>
 
@@ -193,16 +212,6 @@ export default function EditStore() {
         ))}
       </div>
 
-      {/* ボタン群 */}
-      <div className="mt-6 flex justify-end gap-4">
-        <button
-          onClick={() => setIsDeleteDialogOpen(true)}
-          className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
-        >
-          削除
-        </button>
-      </div>
-
       {/* 削除ダイアログ */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
@@ -237,6 +246,7 @@ export default function EditStore() {
             <button
               onClick={() => handleDelete(selectedIds)}
               className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+              disabled={isProcessing}
             >
               削除
             </button>

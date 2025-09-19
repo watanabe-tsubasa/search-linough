@@ -11,14 +11,15 @@ export function cn(...inputs: ClassValue[]) {
  */
 export const normalizeAddress = (address: string): string => {
   return address
+    .replace(/[０-９]/g, (digit) => String.fromCharCode(digit.charCodeAt(0) - 0xFEE0)) // 全角数字 → 半角
+    .replace(/\s+/g, '')      // 空白削除
     .replace(/丁目/g, '-')    // "3丁目" → "3-"
+    .replace(/号(?=\d+(?:号室|室|部屋))/g, '号-') // 部屋番号の前にハイフンを補完
     .replace(/(\d+)(?:番地|番)(\d+)号?/g, '$1-$2') // "14番地9号" → "14-9"
     .replace(/(\d+)(?:番地|番)(\d+)/g, '$1-$2') // "14番地9" → "14-9"
     .replace(/(\d+)(?:番地|番)(?![\d])/g, '$1-') // 番地や番で終わる場合
     .replace(/(\d+)号(?!室|部屋)/g, '$1')  // 号で終わる場合（部屋番号でない場合）
-    .replace(/\s+/g, '')      // 空白削除
-    .replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)) // 全角数字 → 半角
-    .replace(/-\d+(?:号室|室|部屋).*$/, '') // 部屋番号を削除
+    .replace(/-?\d+(?:号室|室|部屋).*$/, '') // 部屋番号を削除
     .replace(/(?<=-\d+)-+/g, '-') // 連続するハイフンを1つに
     .replace(/-+$/g, ''); // 末尾のハイフンを削除
 }
